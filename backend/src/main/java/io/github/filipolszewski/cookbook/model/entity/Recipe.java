@@ -1,6 +1,5 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
-import io.github.filipolszewski.cookbook.constants.DescriptionConstants;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,16 +23,19 @@ import java.util.Set;
 @SQLDelete(sql = "UPDATE recipes SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Recipe extends BaseEntity {
+
+    public static final int MAX_DESCRIPTION_LENGTH = 5000;
+
     @NotBlank
     @Column(nullable = false)
     private String name;
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String slug;
 
     @NotBlank
-    @Column(nullable = false, length = DescriptionConstants.MAX_LENGTH)
+    @Column(nullable = false, length = MAX_DESCRIPTION_LENGTH)
     private String description;
 
     @NotNull
@@ -61,4 +63,9 @@ public class Recipe extends BaseEntity {
             joinColumns = @JoinColumn(name = "recipe_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private Set<Tag> tags = new HashSet<>();
+
+    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
+            orphanRemoval = true)
+    private Set<Review> reviews = new HashSet<>();
 }

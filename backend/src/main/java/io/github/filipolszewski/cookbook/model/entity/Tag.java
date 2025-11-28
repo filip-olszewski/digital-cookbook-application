@@ -22,7 +22,7 @@ import java.util.Set;
 @SQLRestriction("deleted_at IS NULL")
 public class Tag extends BaseEntity {
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String label;
 
     // RELATIONS

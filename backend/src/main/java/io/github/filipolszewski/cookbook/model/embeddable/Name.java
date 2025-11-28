@@ -1,0 +1,12 @@
+package io.github.filipolszewski.cookbook.model.embeddable;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.NotBlank;
+
+@Embeddable
+public record Name(
+    @NotBlank @Column(nullable = false) String firstName,
+    String middleName,
+    @NotBlank @Column(nullable = false) String lastName
+) { }
