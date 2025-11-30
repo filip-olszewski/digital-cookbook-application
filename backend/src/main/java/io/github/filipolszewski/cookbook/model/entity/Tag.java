@@ -1,5 +1,6 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
+import io.github.filipolszewski.cookbook.annotations.DatabaseUnique;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -21,8 +22,10 @@ import java.util.Set;
 @SQLDelete(sql = "UPDATE tags SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Tag extends BaseEntity {
+
     @NotBlank
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
+    @DatabaseUnique
     private String label;
 
     // RELATIONS

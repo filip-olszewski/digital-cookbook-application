@@ -1,5 +1,6 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
+import io.github.filipolszewski.cookbook.annotations.DatabaseUnique;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,8 +21,6 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SQLDelete(sql = "UPDATE recipes SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
-@SQLRestriction("deleted_at IS NULL")
 public class Recipe extends BaseEntity {
 
     public static final int MAX_DESCRIPTION_LENGTH = 5000;
@@ -31,7 +30,8 @@ public class Recipe extends BaseEntity {
     private String name;
 
     @NotBlank
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
+    @DatabaseUnique
     private String slug;
 
     @NotBlank
@@ -52,7 +52,6 @@ public class Recipe extends BaseEntity {
 
     private String imgUrl;
 
-    // TODO: Add Category relation, Author relation
     // RELATIONS
     @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
             cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, orphanRemoval = true)
@@ -70,7 +69,20 @@ public class Recipe extends BaseEntity {
     private Set<Review> reviews = new HashSet<>();
 
     @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL,
+            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
             orphanRemoval = true)
     private Set<Favourite> favourites = new HashSet<>();
+
+    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
+            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
+            orphanRemoval = true)
+    private Set<Step> steps = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
 }

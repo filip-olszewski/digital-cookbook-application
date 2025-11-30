@@ -1,5 +1,6 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
+import io.github.filipolszewski.cookbook.annotations.DatabaseUnique;
 import io.github.filipolszewski.cookbook.model.embeddable.Name;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import jakarta.persistence.*;
@@ -25,7 +26,8 @@ import java.util.Set;
 public class User extends BaseEntity {
 
     @NotBlank
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
+    @DatabaseUnique
     private String email;
 
     @Embedded
@@ -46,6 +48,12 @@ public class User extends BaseEntity {
     private Set<Review> reviews = new HashSet<>();
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL, orphanRemoval = true)
+            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
+            orphanRemoval = true)
     private Set<Favourite> favourites = new HashSet<>();
+
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY,
+            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
+            orphanRemoval = true)
+    private Set<Recipe> createdRecipes = new HashSet<>();
 }

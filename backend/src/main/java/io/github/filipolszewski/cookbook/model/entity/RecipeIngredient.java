@@ -9,10 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "recipe_ingredients", uniqueConstraints = {
-        @UniqueConstraint(name = "recipe_ingredients",
-                columnNames = {"recipe_id", "ingredient_id"})
-})
+@Table(name = "recipe_ingredients")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +17,7 @@ import lombok.Setter;
 public class RecipeIngredient extends BaseEntity {
     @NotNull
     @Column(nullable = false)
-    private Integer amount;
+    private Double amount;
 
     @NotBlank
     @Column(nullable = false)
