@@ -44,4 +44,8 @@ public class User extends BaseEntity {
             cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
             orphanRemoval = true)
     private Set<Review> reviews = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Favourite> favourites = new HashSet<>();
 }

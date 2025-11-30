@@ -68,4 +68,9 @@ public class Recipe extends BaseEntity {
             cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
             orphanRemoval = true)
     private Set<Review> reviews = new HashSet<>();
+
+    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private Set<Favourite> favourites = new HashSet<>();
 }
