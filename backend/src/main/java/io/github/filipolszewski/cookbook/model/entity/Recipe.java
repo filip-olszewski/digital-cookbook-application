@@ -21,6 +21,8 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE recipes SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Recipe extends BaseEntity {
 
     public static final int MAX_DESCRIPTION_LENGTH = 5000;

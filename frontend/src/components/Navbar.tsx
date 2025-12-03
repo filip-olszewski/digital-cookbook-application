@@ -12,26 +12,28 @@ const Navbar = () => {
   };
 
   return (
-    <nav className='flex justify-between px-48 py-6 font-grotesk fixed w-full bg-white z-100'>
+    <nav className='flex justify-between items-center px-48 py-6 font-grotesk fixed w-full z-100'>
       <div className='flex flex-1 justify-start'>
         <NavLink to='/' className='font-semibold'>
           Digital Cookbook
         </NavLink>
       </div>
 
-      <div className='flex flex-1 justify-center gap-8 text-'>
-        <NavLink to='/' className={isLinkActive}>
-          Home
-        </NavLink>
-        <NavLink to='/recipes' className={isLinkActive}>
-          Browse Recipes
-        </NavLink>
-        <NavLink to='/trending' className={isLinkActive}>
-          Trending
-        </NavLink>
-        <NavLink to='/explore' className={isLinkActive}>
-          Explore
-        </NavLink>
+      <div className='flex flex-1 justify-center'>
+        <div className='flex bg-slate-100 py-4 px-6 rounded-xl gap-8'>
+          <NavLink to='/' className={isLinkActive}>
+            Home
+          </NavLink>
+          <NavLink to='/recipes' className={isLinkActive}>
+            Browse Recipes
+          </NavLink>
+          <NavLink to='/trending' className={isLinkActive}>
+            Trending
+          </NavLink>
+          <NavLink to='/explore' className={isLinkActive}>
+            Explore
+          </NavLink>
+        </div>
       </div>
 
       <div className='flex flex-1 justify-end gap-8'>
