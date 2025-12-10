@@ -3,7 +3,7 @@ import { fetchRecipes } from '../api/recipeApi';
 import { useRecipes } from '../hooks/useRecipes';
 import RecipeCard from '../components/RecipeCard';
 import type { RecipeSummary } from '../types/recipeTypes';
-import Filter from '../components/RecipeSearchFilter';
+import RecipeFilters from '../components/RecipeFilters';
 
 const BrowseRecipesPage = () => {
   const { data, error, isPending } = useRecipes();
@@ -25,14 +25,14 @@ const BrowseRecipesPage = () => {
     );
   }
 
-  const recipes: RecipeSummary[] = data.content;
+  const recipes: RecipeSummary[] = data.content || [];
 
   return (
     <div className='px-48 pt-40'>
       <h1 className='mb-8'>Browse recipes</h1>
       <div className='flex gap-8'>
         <div className='flex-1'>
-          <Filter />
+          <RecipeFilters />
         </div>
         <div className='flex-4 grid grid-cols-4 gap-4'>
           {recipes.map(recipe => (

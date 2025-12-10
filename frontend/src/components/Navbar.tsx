@@ -12,7 +12,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className='flex justify-between items-center px-48 py-6 font-grotesk fixed w-full z-100'>
+    <nav className='grid grid-cols-[1fr_auto_1fr] items-center px-48 py-6 fixed w-full z-100'>
       <div className='flex flex-1 justify-start'>
         <NavLink to='/' className='font-semibold'>
           Digital Cookbook

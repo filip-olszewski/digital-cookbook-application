@@ -1,20 +1,17 @@
-import React from 'react';
 import RecipeCard from './RecipeCard';
-import { Link } from 'react-router';
 
-type PageSectionProps = {
+type RecipeRowProps = {
   title: string;
-  type?: 'list' | 'grid';
   limit?: number;
   recipes: any[];
 };
 
-const PageSection = ({
+const RecipeRow = ({
   title,
-  type = 'list',
   limit = 4,
   recipes,
-}: PageSectionProps) => {
+}: RecipeRowProps) => {
+  
   recipes = recipes.slice(0, limit);
 
   return (
@@ -29,4 +26,4 @@ const PageSection = ({
   );
 };
 
-export default PageSection;
+export default RecipeRow;

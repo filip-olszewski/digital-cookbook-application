@@ -1,9 +1,11 @@
 import React from 'react';
-import PageSection from '../components/PageSection';
+import RecipeRow from '../components/RecipeRow';
 import { useRecipes } from '../hooks/useRecipes';
 import type { RecipeSummary } from '../types/recipeTypes';
+import { recipes } from '../mock/MockRecipes';
 
 const HomePage = () => {
+  /* 
   const { data, error, isPending } = useRecipes();
 
   if (error) {
@@ -22,13 +24,14 @@ const HomePage = () => {
       </div>
     );
   }
+    const recipes: RecipeSummary[] = data.content;
+  */
 
-  const recipes: RecipeSummary[] = data.content;
 
   return (
     <div className='px-48 pt-40'>
-      <PageSection title='Popular recipes' recipes={recipes} />
-      <PageSection title='Trending' recipes={recipes} />
+      <RecipeRow title='Popular recipes' recipes={recipes} />
+      <RecipeRow title='Trending' recipes={recipes} />
     </div>
   );
 };

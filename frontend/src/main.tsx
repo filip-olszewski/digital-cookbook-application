@@ -11,6 +11,7 @@ import MainLayout from './layouts/MainLayout.tsx';
 import HomePage from './pages/HomePage.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BrowseRecipesPage from './pages/BrowseRecipesPage.tsx';
+import RecipePage from './pages/RecipePage.tsx';
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const router = createBrowserRouter(
     <Route element={<MainLayout />}>
       <Route index element={<HomePage />} />
       <Route path='/recipes' element={<BrowseRecipesPage />} />
+      <Route path='/recipes/:slug' element={<RecipePage />} />
     </Route>
   )
 );

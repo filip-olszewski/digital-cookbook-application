@@ -1,7 +1,7 @@
 package io.github.filipolszewski.cookbook.dto.recipe;
 
-import io.github.filipolszewski.cookbook.dto.recipeingredient.RecipeIngredientRequest;
-import io.github.filipolszewski.cookbook.dto.step.StepRequest;
+import io.github.filipolszewski.cookbook.dto.recipeingredient.RecipeIngredientAddRequest;
+import io.github.filipolszewski.cookbook.dto.step.StepAppendRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,6 +16,6 @@ public record RecipeCreateRequest(
     @NotNull Integer servings,
     @NotNull Long categoryId,
     @NotNull List<Long> tagIds,
-    @NotEmpty List<@Valid RecipeIngredientRequest> recipeIngredients,
-    @NotEmpty List<@Valid StepRequest> steps
+    @NotEmpty List<@Valid RecipeIngredientAddRequest> recipeIngredients,
+    @NotEmpty List<@Valid StepAppendRequest> steps
 ) {}

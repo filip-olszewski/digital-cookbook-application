@@ -41,7 +41,7 @@ export const recipes = [
       'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&q=80&w=600',
     category: 'Dinner',
     tags: ['japanese', 'asian', 'chicken'],
-    rating: 4.7,
+    rating: 3.1,
   },
   {
     id: 5,
@@ -63,7 +63,7 @@ export const recipes = [
       'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2b?auto=format&fit=crop&q=80&w=600',
     category: 'Lunch',
     tags: ['vegetarian', 'soup', 'autumn'],
-    rating: 4.4,
+    rating: 4.2
   },
   {
     id: 7,
@@ -74,7 +74,7 @@ export const recipes = [
       'https://images.unsplash.com/photo-1613514785940-daed07799d9b?auto=format&fit=crop&q=80&w=600',
     category: 'Dinner',
     tags: ['mexican', 'spicy', 'party'],
-    rating: 4.8,
+    rating: 3.5,
   },
   {
     id: 8,
@@ -85,6 +85,6 @@ export const recipes = [
       'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?auto=format&fit=crop&q=80&w=600',
     category: 'Dessert',
     tags: ['sweet', 'baking', 'chocolate'],
-    rating: 5.0,
+    rating: 2.2,
   },
 ];
