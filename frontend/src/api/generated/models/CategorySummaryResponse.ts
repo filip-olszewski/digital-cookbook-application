@@ -3,9 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type CategorySummaryResponse = {
-    id?: number;
-    parentId?: number;
-    name?: string;
-    slug?: string;
+    id: number;
+    parentId: number;
+    name: string;
+    slug: string;
 };
 

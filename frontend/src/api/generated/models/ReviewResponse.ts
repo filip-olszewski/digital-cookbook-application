@@ -4,9 +4,10 @@
 /* eslint-disable */
 import type { UserSummaryResponse } from './UserSummaryResponse';
 export type ReviewResponse = {
-    id?: number;
-    rating?: number;
+    id: number;
+    rating: number;
     comment?: string;
-    user?: UserSummaryResponse;
+    postedAt: string;
+    user: UserSummaryResponse;
 };
 

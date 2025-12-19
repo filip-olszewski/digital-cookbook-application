@@ -4,10 +4,10 @@
 /* eslint-disable */
 import type { CategorySummaryResponse } from './CategorySummaryResponse';
 export type CategoryDetailsResponse = {
-    id?: number;
-    name?: string;
-    slug?: string;
-    imgUrl?: string;
-    parent?: CategorySummaryResponse;
+    id: number;
+    name: string;
+    slug: string;
+    imgUrl: string;
+    parent: CategorySummaryResponse;
 };
 

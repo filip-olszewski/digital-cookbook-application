@@ -3,10 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 export type UserSummaryResponse = {
-    id?: number;
-    email?: string;
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
+    id: number;
+    email: string;
+    username: string;
+    firstName: string;
+    middleName: string;
+    lastName: string;
 };
 

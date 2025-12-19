@@ -1,17 +1,27 @@
-import type { RecipeSummary } from '../types/recipeTypes';
-import { RecipeControllerService, type PageRecipeSummaryResponse, type RecipeDetailsResponse, type RecipeSearchCriteria } from './generated';
+import type { Pageable } from '../types/pageTypes';
+import type { RecipeSearchCriteria } from '../types/recipeTypes';
+import {
+  RecipeControllerService,
+  type RecipeDetailsResponse,
+} from './generated';
 
 export const fetchRecipes = async (
-  criteria: RecipeSearchCriteria,
-  page?: number,
-  size?: number,
-  sort?: Array<string>
-): Promise<PageRecipeSummaryResponse> => {
-  return await RecipeControllerService.getRecipes(page, size, sort);
+  pageable?: Pageable,
+  criteria?: RecipeSearchCriteria
+) => {
+  const sort: string[] =
+    (pageable?.sort && [pageable.sort.sortBy + ',' + pageable.sort.order]) ||
+    [];
+
+  return await RecipeControllerService.getRecipes({
+    ...pageable,
+    sort,
+    ...criteria,
+  });
 };
 
-export const fetchRecipe = async (slug: string): Promise<RecipeDetailsResponse> => {
-  return await RecipeControllerService.getRecipe(slug);
-}
-
-
+export const fetchRecipe = async (
+  slug: string
+): Promise<RecipeDetailsResponse> => {
+  return await RecipeControllerService.getRecipe({ slug });
+};

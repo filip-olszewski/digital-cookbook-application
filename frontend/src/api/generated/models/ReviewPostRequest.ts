@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type CategorySearchCriteria = {
-    name?: string;
-    parentId?: number;
-    root?: boolean;
+export type ReviewPostRequest = {
+    recipeId: number;
+    rating: number;
+    comment: string;
 };
 

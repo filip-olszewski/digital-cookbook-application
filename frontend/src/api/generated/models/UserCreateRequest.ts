@@ -4,6 +4,7 @@
 /* eslint-disable */
 export type UserCreateRequest = {
     email: string;
+    username: string;
     firstName: string;
     middleName?: string;
     lastName: string;

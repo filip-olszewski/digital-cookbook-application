@@ -15,6 +15,8 @@ export namespace IngredientCreateRequest {
         GRAIN = 'GRAIN',
         SPICE = 'SPICE',
         MISC = 'MISC',
+        SWEETENER = 'SWEETENER',
+        SAUCE = 'SAUCE',
     }
 }
 

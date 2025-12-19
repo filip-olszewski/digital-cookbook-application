@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export type SortObject = {
-    empty?: boolean;
     sorted?: boolean;
+    empty?: boolean;
     unsorted?: boolean;
 };
 

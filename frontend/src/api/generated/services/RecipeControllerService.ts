@@ -13,6 +13,7 @@ export class RecipeControllerService {
      * @throws ApiError
      */
     public static getRecipes({
+        name,
         maxPrepTime,
         minRating,
         tags,
@@ -21,10 +22,11 @@ export class RecipeControllerService {
         size = 24,
         sort,
     }: {
+        name?: string,
         maxPrepTime?: number,
         minRating?: number,
-        tags?: Array<number>,
-        categories?: Array<number>,
+        tags?: Array<string>,
+        categories?: Array<string>,
         /**
          * Zero-based page index (0..N)
          */
@@ -42,6 +44,7 @@ export class RecipeControllerService {
             method: 'GET',
             url: '/api/v1/recipes',
             query: {
+                'name': name,
                 'maxPrepTime': maxPrepTime,
                 'minRating': minRating,
                 'tags': tags,

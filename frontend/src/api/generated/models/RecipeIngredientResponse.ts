@@ -3,11 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 export type RecipeIngredientResponse = {
-    id?: number;
-    name?: string;
-    type?: RecipeIngredientResponse.type;
-    amount?: number;
-    unit?: string;
+    id: number;
+    name: string;
+    type: RecipeIngredientResponse.type;
+    amount: number;
+    unit: string;
 };
 export namespace RecipeIngredientResponse {
     export enum type {
@@ -18,6 +18,8 @@ export namespace RecipeIngredientResponse {
         GRAIN = 'GRAIN',
         SPICE = 'SPICE',
         MISC = 'MISC',
+        SWEETENER = 'SWEETENER',
+        SAUCE = 'SAUCE',
     }
 }
 

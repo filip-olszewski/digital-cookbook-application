@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { CategoryDetailsResponse } from '../models/CategoryDetailsResponse';
-import type { CategorySearchCriteria } from '../models/CategorySearchCriteria';
 import type { CategorySummaryResponse } from '../models/CategorySummaryResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -14,15 +13,21 @@ export class CategoryControllerService {
      * @throws ApiError
      */
     public static getAllCategories({
-        criteria,
+        name,
+        parentId,
+        root,
     }: {
-        criteria: CategorySearchCriteria,
+        name?: string,
+        parentId?: number,
+        root?: boolean,
     }): CancelablePromise<Array<CategorySummaryResponse>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/categories',
             query: {
-                'criteria': criteria,
+                'name': name,
+                'parentId': parentId,
+                'root': root,
             },
         });
     }

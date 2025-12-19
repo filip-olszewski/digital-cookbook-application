@@ -3,7 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export type TagResponse = {
-    id?: number;
-    label?: string;
+    id: number;
+    label: string;
+    slug: string;
 };
 

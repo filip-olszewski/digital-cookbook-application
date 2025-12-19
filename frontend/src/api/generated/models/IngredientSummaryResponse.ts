@@ -3,9 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type IngredientSummaryResponse = {
-    id?: number;
-    name?: string;
-    type?: IngredientSummaryResponse.type;
+    id: number;
+    name: string;
+    type: IngredientSummaryResponse.type;
 };
 export namespace IngredientSummaryResponse {
     export enum type {
@@ -16,6 +16,8 @@ export namespace IngredientSummaryResponse {
         GRAIN = 'GRAIN',
         SPICE = 'SPICE',
         MISC = 'MISC',
+        SWEETENER = 'SWEETENER',
+        SAUCE = 'SAUCE',
     }
 }
 

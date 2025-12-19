@@ -1,12 +1,19 @@
-import Navbar from '../components/Navbar';
+import Footer from '../components/layout/Footer';
+import Navbar from '../components/layout/Navbar';
 import { Outlet } from 'react-router';
+import SmartScrollRestoration from '../components/util/SmartScrollRestoration';
 
 const MainLayout = () => {
   return (
-    <div>
+    <>
+      <SmartScrollRestoration />
+
       <Navbar />
-      <Outlet />
-    </div>
+      <main>
+        <Outlet />
+      </main>
+      <Footer />
+    </>
   );
 };
 

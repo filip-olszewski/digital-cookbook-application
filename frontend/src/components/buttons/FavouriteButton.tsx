@@ -1,15 +1,37 @@
-import { HeartIcon } from '@heroicons/react/24/outline'
-import React from 'react'
+import { useState } from 'react';
+import AuthGateModal from '../auth/AuthGateModal';
+import { HeartIcon } from '@heroicons/react/24/solid';
 
 const FavouriteButton = () => {
-  return (
-    <button 
-      className='absolute top-4 right-4 w-10 h-10 rounded-full 
-      bg-white grid place-content-center z-10 duration-300 hover:text-pink-500'
-    >
-      <HeartIcon className='size-6' />
-    </button>
-  )
-}
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isAuthenticated = false;
 
-export default FavouriteButton
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    console.log('Added to favorites!');
+  };
+
+  return (
+    <>
+      <button
+        className='absolute top-3 right-3 w-8 h-8 rounded-full text-slate-400 cursor-pointer
+      bg-white grid place-content-center z-10 duration-300 hover:text-pink-500'
+        onClick={handleFavoriteClick}
+      >
+        <HeartIcon className='size-5' />
+      </button>
+
+      <AuthGateModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
+    </>
+  );
+};
+
+export default FavouriteButton;
