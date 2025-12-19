@@ -1,4 +1,4 @@
-package io.github.filipolszewski.cookbook.constants;
+package io.github.filipolszewski.cookbook.constant;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

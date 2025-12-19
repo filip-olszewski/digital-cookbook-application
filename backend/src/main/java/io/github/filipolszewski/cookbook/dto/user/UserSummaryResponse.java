@@ -1,9 +1,13 @@
 package io.github.filipolszewski.cookbook.dto.user;
 
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
+
 public record UserSummaryResponse(
-        Long id,
-        String email,
-        String firstName,
-        String middleName,
-        String lastName
+    @NotNull Long id,
+    @NotNull String email,
+    @NotNull String username,
+    @NotNull String firstName,
+    @NotNull @Nullable String middleName,
+    @NotNull String lastName
 ) {}

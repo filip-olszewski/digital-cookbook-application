@@ -1,6 +1,6 @@
 package io.github.filipolszewski.cookbook.controller;
 
-import io.github.filipolszewski.cookbook.constants.ApiConstants;
+import io.github.filipolszewski.cookbook.constant.ApiConstants;
 import io.github.filipolszewski.cookbook.dto.user.UserCreateRequest;
 import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
 import io.github.filipolszewski.cookbook.service.UserService;

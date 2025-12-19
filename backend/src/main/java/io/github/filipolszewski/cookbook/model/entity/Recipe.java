@@ -1,6 +1,6 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
-import io.github.filipolszewski.cookbook.annotations.DatabaseUnique;
+import io.github.filipolszewski.cookbook.annotation.DatabaseUnique;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -53,6 +53,24 @@ public class Recipe extends BaseEntity {
     private LocalDate publicationDate;
 
     private String imgUrl;
+
+    /**
+     * Cached average rating for performance optimization.
+     * Denormalized to enable efficient sorting and filtering.
+     * Updates are handled by {@link io.github.filipolszewski.cookbook.service.ReviewService}.
+     */
+    @NotNull
+    @Column(nullable = false)
+    private Double averageRating = 0.0;
+
+    /**
+     * Cached average rating for performance optimization.
+     * Denormalized to enable efficient sorting and filtering.
+     * Updates are handled by {@link io.github.filipolszewski.cookbook.service.ReviewService}.
+     */
+    @NotNull
+    @Column(nullable = false)
+    private Integer reviewCount = 0;
 
     // RELATIONS
     @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,

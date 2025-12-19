@@ -7,6 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -24,13 +25,13 @@ public class BaseEntity {
 
     @CreatedDate
     @Column(nullable = false)
-    private LocalDate createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(nullable = false)
-    private LocalDate updatedAt;
+    private Instant updatedAt;
 
-    private LocalDateTime deletedAt = null;
+    private Instant deletedAt = null;
 
     @Override
     public boolean equals(Object o) {

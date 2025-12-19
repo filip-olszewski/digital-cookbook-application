@@ -1,7 +1,6 @@
 package io.github.filipolszewski.cookbook.controller;
 
-import com.sun.net.httpserver.HttpsServer;
-import io.github.filipolszewski.cookbook.constants.ApiConstants;
+import io.github.filipolszewski.cookbook.constant.ApiConstants;
 import io.github.filipolszewski.cookbook.dto.ingredient.IngredientCreateRequest;
 import io.github.filipolszewski.cookbook.dto.ingredient.IngredientSummaryResponse;
 import io.github.filipolszewski.cookbook.service.IngredientService;

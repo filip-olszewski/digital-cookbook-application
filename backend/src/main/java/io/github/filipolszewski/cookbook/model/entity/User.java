@@ -1,6 +1,6 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
-import io.github.filipolszewski.cookbook.annotations.DatabaseUnique;
+import io.github.filipolszewski.cookbook.annotation.DatabaseUnique;
 import io.github.filipolszewski.cookbook.model.embeddable.Name;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import jakarta.persistence.*;
@@ -29,6 +29,11 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     @DatabaseUnique
     private String email;
+
+    @NotBlank
+    @Column(nullable = false)
+    @DatabaseUnique
+    private String username;
 
     @Embedded
     private Name name;

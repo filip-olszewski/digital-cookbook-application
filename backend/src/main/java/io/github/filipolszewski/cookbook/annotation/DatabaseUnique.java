@@ -1,4 +1,4 @@
-package io.github.filipolszewski.cookbook.annotations;
+package io.github.filipolszewski.cookbook.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

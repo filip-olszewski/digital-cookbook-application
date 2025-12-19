@@ -7,5 +7,7 @@ public enum IngredientType {
     DAIRY,
     GRAIN,
     SPICE,
-    MISC
+    MISC,
+    SWEETENER,
+    SAUCE
 }

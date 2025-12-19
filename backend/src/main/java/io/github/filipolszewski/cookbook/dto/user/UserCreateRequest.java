@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public record UserCreateRequest(
         @NotBlank String email,
+        @NotBlank String username,
         @NotBlank String firstName,
         String middleName,
         @NotBlank String lastName,

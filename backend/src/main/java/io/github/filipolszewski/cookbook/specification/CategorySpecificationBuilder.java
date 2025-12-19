@@ -9,21 +9,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class CategorySpecificationBuilder implements SpecificationBuilder<Category, CategorySearchCriteria> {
 
-    public Specification<Category> hasName(String name) {
+    private Specification<Category> hasName(String name) {
         return (root, query, cb) ->
-            cb.like(
-                cb.lower(root.get("name")),
-                "%" + name.toLowerCase() + "%"
-            );
+            cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
     }
 
-    public Specification<Category> hasParentId(Long parentId) {
+    private Specification<Category> hasParentId(Long parentId) {
         return (root, query, cb) -> {
             return cb.equal(root.get("parentCategory").get("id"), parentId);
         };
     }
 
-    public Specification<Category> isRoot(boolean isRoot) {
+    private Specification<Category> isRoot(boolean isRoot) {
         return (root, query, cb) ->
             isRoot ?
                 cb.isNull(root.get("parentCategory")) :

@@ -1,6 +1,6 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
-import io.github.filipolszewski.cookbook.annotations.DatabaseUnique;
+import io.github.filipolszewski.cookbook.annotation.DatabaseUnique;
 import io.github.filipolszewski.cookbook.model.enumeration.IngredientType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

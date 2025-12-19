@@ -13,18 +13,18 @@ import java.util.Set;
 
 @Mapper(componentModel = "spring", uses = {
     CategoryMapper.class, TagMapper.class, UserMapper.class,
-    StepMapper.class, ReviewMapper.class, RecipeIngredientMapper.class
+    StepMapper.class, RecipeIngredientMapper.class
 })
 public interface RecipeMapper {
 
     @Mapping(target = "ingredients", source = "recipeIngredients")
-    @Mapping(target = "rating", source = "reviews", qualifiedByName = "calculateAverageRating")
+    @Mapping(target = "rating", source = "averageRating")
     @Mapping(target = "favouriteCount", source = "favourites", qualifiedByName = "calculateTotalLikes")
     RecipeDetailsResponse toDetails(Recipe recipe);
 
     @Mapping(target = "authorName", source = "author", qualifiedByName = "mapAuthorName")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagLabels")
-    @Mapping(target = "rating", source = "reviews", qualifiedByName = "calculateAverageRating")
+    @Mapping(target = "rating", source = "averageRating")
     @Mapping(target = "category", source = "category.name")
     RecipeSummaryResponse toSummary(Recipe recipe);
 
@@ -32,15 +32,6 @@ public interface RecipeMapper {
     default Integer calculateTotalLikes(Set<Favourite> favourites) {
         if(favourites == null) return 0;
         return favourites.size();
-    }
-
-    @Named("calculateAverageRating")
-    default Double calculateAverageRating(Set<Review> reviews) {
-        if(reviews == null || reviews.isEmpty()) return 0.0;
-        return reviews.stream()
-                .mapToInt(Review::getRating)
-                .average()
-                .orElse(0.0);
     }
 
     @Named("mapTagLabels")
