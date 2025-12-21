@@ -22,7 +22,7 @@ public interface RecipeMapper {
     @Mapping(target = "favouriteCount", source = "favourites", qualifiedByName = "calculateTotalLikes")
     RecipeDetailsResponse toDetails(Recipe recipe);
 
-    @Mapping(target = "authorName", source = "author", qualifiedByName = "mapAuthorName")
+    @Mapping(target = "authorName", source = "author.name.fullName", defaultValue = "Unknown")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagLabels")
     @Mapping(target = "rating", source = "averageRating")
     @Mapping(target = "category", source = "category.name")
@@ -39,20 +39,4 @@ public interface RecipeMapper {
         if(tags == null) return Collections.emptyList();
         return tags.stream().map(Tag::getLabel).sorted().toList();
     }
-
-    @Named("mapAuthorName")
-    default String mapAuthorName(User author) {
-        if(author == null) return "Unknown";
-
-        StringBuilder fullName = new StringBuilder();
-
-        fullName.append(author.getName().firstName()).append(" ");
-        if(author.getName().middleName() != null && !author.getName().middleName().isBlank()) {
-            fullName.append(author.getName().middleName()).append(" ");
-        }
-        fullName.append(author.getName().lastName());
-        return fullName.toString();
-    }
-
-
 }

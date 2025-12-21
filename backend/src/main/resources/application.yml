@@ -39,6 +39,13 @@ spring:
         default-page-size: 24
         max-page-size: 48
 
+rsa:
+  public-key: classpath:certs/public.pem
+  private-key: classpath:certs/private.pem
+
+jwt:
+  expiration-seconds: 3600
+
 app:
   cors:
     allowed-origins: http://localhost:5173

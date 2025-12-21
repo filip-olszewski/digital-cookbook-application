@@ -1,6 +1,7 @@
 package io.github.filipolszewski.cookbook.mapper;
 
-import io.github.filipolszewski.cookbook.dto.user.UserCreateRequest;
+import io.github.filipolszewski.cookbook.dto.auth.SignupRequest;
+import io.github.filipolszewski.cookbook.dto.user.UserPublicProfileResponse;
 import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import org.mapstruct.Mapper;
@@ -12,10 +13,13 @@ public interface UserMapper {
     @Mapping(target = "name.middleName", source = "middleName")
     @Mapping(target = "name.lastName", source = "lastName")
     @Mapping(target = "role", ignore = true)
-    User toEntity(UserCreateRequest request);
+    User toEntity(SignupRequest request);
 
-    @Mapping(target = "firstName", source = "name.firstName")
-    @Mapping(target = "middleName", source = "name.middleName")
-    @Mapping(target = "lastName", source = "name.lastName")
+    @Mapping(target = "fullName", source = "name.fullName")
     UserSummaryResponse toSummary(User user);
+
+    @Mapping(target = "fullName", source = "user.name.fullName")
+    @Mapping(target = "joinedAt", source = "user.createdAt")
+    @Mapping(target = "recipeCount", source = "recipeCount")
+    UserPublicProfileResponse toPublicDetails(User user, int recipeCount);
 }

@@ -23,7 +23,7 @@ public class ReviewService {
 
     private final RecipeRepository recipeRepository;
 
-    public Page<ReviewResponse> getAllReviews(String slug, Pageable pageable) {
+    public Page<ReviewResponse> getReviews(String slug, Pageable pageable) {
         return reviewRepository.findAllReviewsByRecipeSlug(slug, pageable)
                 .map(review -> reviewMapper.toResponse(review));
     }

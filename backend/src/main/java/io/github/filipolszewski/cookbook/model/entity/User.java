@@ -46,6 +46,11 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private Role role;
 
+    @Column(length = 500)
+    private String bio;
+
+    private String avatarUrl;
+
     // RELATIONS
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,
             cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},

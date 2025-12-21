@@ -21,6 +21,11 @@ public class RecipeSpecificationBuilder implements SpecificationBuilder<Recipe, 
             cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
     }
 
+    private Specification<Recipe> hasAuthor(String author) {
+        return (root, query, cb) ->
+            cb.equal(root.get("author").get("username"), author);
+    }
+
     private Specification<Recipe> hasPrepTime(Integer maxPrepTime) {
         return (root, query, cb) ->
                 cb.lessThanOrEqualTo(root.get("prepTime"), maxPrepTime);
@@ -49,8 +54,12 @@ public class RecipeSpecificationBuilder implements SpecificationBuilder<Recipe, 
         Specification<Recipe> spec = (root, query, cb) ->
             cb.conjunction();
 
-        if(criteria.name() != null && !criteria.name().isEmpty()) {
+        if(criteria.name() != null && !criteria.name().isBlank()) {
             spec = spec.and(hasName(criteria.name()));
+        }
+
+        if(criteria.author() != null && !criteria.author().isBlank()) {
+            spec = spec.and(hasAuthor(criteria.author()));
         }
 
         if(criteria.maxPrepTime() != null) {

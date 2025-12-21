@@ -1,8 +1,8 @@
-package io.github.filipolszewski.cookbook.dto.user;
+package io.github.filipolszewski.cookbook.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record UserCreateRequest(
+public record SignupRequest(
         @NotBlank String email,
         @NotBlank String username,
         @NotBlank String firstName,

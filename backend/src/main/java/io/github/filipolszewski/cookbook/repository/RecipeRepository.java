@@ -19,4 +19,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
 
     @Query("SELECT COUNT(*) FROM Review rv WHERE rv.recipe.id = :id")
     Integer getRecipeReviewCount(Long id);
+
+    @Query("SELECT COUNT(*) FROM Recipe r WHERE r.author.username = :username")
+    Integer getRecipeCountByAuthor(String username);
 }

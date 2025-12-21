@@ -4,6 +4,7 @@ import java.util.List;
 
 public record RecipeSearchCriteria(
     String name,
+    String author,
     Integer maxPrepTime,
     Double minRating,
     List<String> tags,

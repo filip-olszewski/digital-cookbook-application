@@ -21,11 +21,11 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping("/recipes/{slug}/reviews")
-    public ResponseEntity<Page<ReviewResponse>> getAllReviews(
+    public ResponseEntity<Page<ReviewResponse>> getReviews(
             @PathVariable String slug,
             @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(reviewService.getAllReviews(slug, pageable));
+        return ResponseEntity.ok(reviewService.getReviews(slug, pageable));
     }
 
     @PostMapping("/recipes/{slug}/reviews")

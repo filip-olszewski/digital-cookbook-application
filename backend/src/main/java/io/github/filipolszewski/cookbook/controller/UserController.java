@@ -1,12 +1,10 @@
 package io.github.filipolszewski.cookbook.controller;
 
 import io.github.filipolszewski.cookbook.constant.ApiConstants;
-import io.github.filipolszewski.cookbook.dto.user.UserCreateRequest;
-import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
+import io.github.filipolszewski.cookbook.dto.user.UserPrivateProfileResponse;
+import io.github.filipolszewski.cookbook.dto.user.UserPublicProfileResponse;
 import io.github.filipolszewski.cookbook.service.UserService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +15,13 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping
-    public ResponseEntity<UserSummaryResponse> registerUser(@RequestBody @Valid UserCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.registerUser(request));
+    @GetMapping("/{username}")
+    public ResponseEntity<UserPublicProfileResponse> getPublicUserProfile(@PathVariable String username) {
+        return ResponseEntity.ok(userService.getPublicUserProfile(username));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserPrivateProfileResponse> getMyProfile() {
+        return null;
+    }
 }

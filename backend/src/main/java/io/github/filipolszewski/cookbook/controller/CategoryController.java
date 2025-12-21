@@ -20,10 +20,10 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<CategorySummaryResponse>> getAllCategories(
+    public ResponseEntity<List<CategorySummaryResponse>> getCategories(
         @ParameterObject CategorySearchCriteria criteria
     ) {
-        return ResponseEntity.ok(categoryService.getAllCategories(criteria));
+        return ResponseEntity.ok(categoryService.getCategories(criteria));
     }
 
     @GetMapping("/{slug}")

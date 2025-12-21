@@ -6,12 +6,12 @@ import io.github.filipolszewski.cookbook.dto.ingredient.IngredientSummaryRespons
 import io.github.filipolszewski.cookbook.service.IngredientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class IngredientController {
 
     private final IngredientService ingredientService;
+
+    @GetMapping
+    public ResponseEntity<Page<IngredientSummaryResponse>> getIngredients(
+        @ParameterObject Pageable pageable,
+        @RequestParam(required = false) String name
+    ) {
+        return ResponseEntity.ok(ingredientService.getIngredients(pageable, name));
+    }
 
     @PostMapping
     public ResponseEntity<IngredientSummaryResponse> addIngredient(@RequestBody @Valid IngredientCreateRequest request) {

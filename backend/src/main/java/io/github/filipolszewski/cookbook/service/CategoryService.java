@@ -24,7 +24,7 @@ public class CategoryService {
     private final CategoryMapper categoryMapper;
     private final SpecificationBuilder<Category, CategorySearchCriteria> specificationBuilder;
 
-    public List<CategorySummaryResponse> getAllCategories(CategorySearchCriteria criteria) {
+    public List<CategorySummaryResponse> getCategories(CategorySearchCriteria criteria) {
         Specification<Category> spec = specificationBuilder.build(criteria);
         return categoryRepository.findAll(spec).stream()
                 .map(categoryMapper::toSummary)

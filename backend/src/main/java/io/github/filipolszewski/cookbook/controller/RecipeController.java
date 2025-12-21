@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(ApiConstants.API_V1 + "/recipes")
+@RequestMapping(ApiConstants.API_V1)
 public class RecipeController {
 
     private final RecipeService recipeService;
 
-    @GetMapping
+    @GetMapping("/recipes")
     public ResponseEntity<Page<RecipeSummaryResponse>> getRecipes(
         @ParameterObject RecipeSearchCriteria criteria,
         @ParameterObject Pageable pageable
@@ -27,11 +27,10 @@ public class RecipeController {
         return ResponseEntity.ok(recipeService.getRecipes(criteria, pageable));
     }
 
-    @GetMapping("/{slug}")
+    @GetMapping("/recipes/{slug}")
     public ResponseEntity<RecipeDetailsResponse> getRecipe(
         @PathVariable String slug
     ) {
         return ResponseEntity.ok(recipeService.getRecipe(slug));
     }
-
 }
