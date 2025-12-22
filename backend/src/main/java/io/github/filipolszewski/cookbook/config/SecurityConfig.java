@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import io.github.filipolszewski.cookbook.config.properties.CorsProperties;
 import io.github.filipolszewski.cookbook.config.properties.RsaKeyProperties;
 import io.github.filipolszewski.cookbook.constant.ApiConstants;
 import io.github.filipolszewski.cookbook.security.CustomAuthenticationEntryPoint;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,41 +38,60 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final RsaKeyProperties rsaKeyProperties;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CorsProperties corsProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(ApiConstants.API_V1 + "/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/recipes/**").permitAll()
-                        .requestMatchers(ApiConstants.API_V1 + "/ingredients/**").hasAuthority("ADMIN")
-                        .anyRequest().authenticated()
+            .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
+            .authorizeHttpRequests(auth -> auth
+                // Public Endpoints (Reading + Auth)
+                .requestMatchers(ApiConstants.API_V1 + "/auth/**").permitAll()
+                // Categories - Guests read only
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/categories/**").permitAll()
+                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/categories/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, ApiConstants.API_V1 + "/categories/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/categories/**").hasAuthority("ADMIN")
+
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/recipes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/tags/**").permitAll()
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/ingredients/**").permitAll()
+
+                // Only authenticated user can see their own profile
+                .requestMatchers(ApiConstants.API_V1 + "/users/me").authenticated()
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/users/*").permitAll()
+
+                // Admin Endpoints (Creating immutable resources)
+                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/ingredients/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/tags/**").hasAuthority("ADMIN")
+
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .decoder(jwtDecoder())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
                 )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .decoder(jwtDecoder())
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                        )
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                )
-                .build();
+                .authenticationEntryPoint(authenticationEntryPoint)
+            )
+            .build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
+        configuration.setAllowedMethods(corsProperties.allowedMethods());
+        configuration.setAllowedHeaders(corsProperties.allowedHeaders());
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

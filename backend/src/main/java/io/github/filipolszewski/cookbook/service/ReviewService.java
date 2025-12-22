@@ -6,11 +6,15 @@ import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.ReviewMapper;
 import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.model.entity.Review;
+import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.repository.ReviewRepository;
+import io.github.filipolszewski.cookbook.repository.UserRepository;
+import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,21 +26,36 @@ public class ReviewService {
     private final ReviewMapper reviewMapper;
 
     private final RecipeRepository recipeRepository;
+    private final UserRepository userRepository;
 
     public Page<ReviewResponse> getReviews(String slug, Pageable pageable) {
         return reviewRepository.findAllReviewsByRecipeSlug(slug, pageable)
-                .map(review -> reviewMapper.toResponse(review));
+                .map(reviewMapper::toResponse);
     }
 
     @Transactional
     public ReviewResponse postReview(String slug, ReviewPostRequest request) {
-        Recipe recipe = recipeRepository.findBySlug(slug).orElseThrow(() ->
-            new ResourceNotFoundException("Recipe with a slug of " + slug + " does not exist."));
+        Recipe recipe = recipeRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    ErrorMessageUtil.notFound(Recipe.class, "slug", slug)
+                ));
 
-        // Map to Entity
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    ErrorMessageUtil.notFound(User.class, "email", email)
+                ));
+
+        if(reviewRepository.existsByUserAndRecipe(user, recipe)) {
+            throw new IllegalStateException("User already reviewed this recipe!");
+        }
+
         Review review = reviewMapper.toEntity(request);
         review.setRecipe(recipe);
-//      review.setUser();
+        review.setUser(user);
         reviewRepository.save(review);
 
         // Calculate new recipe rating

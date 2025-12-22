@@ -1,6 +1,7 @@
 package io.github.filipolszewski.cookbook.exception;
 
 import io.github.filipolszewski.cookbook.util.ProblemDetailBuilder;
+import org.springframework.beans.factory.parsing.Problem;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,17 @@ public class GlobalExceptionHandler {
                 .body(ProblemDetailBuilder.builder()
                         .message(ex.getMessage())
                         .title("Resource already exists")
+                        .status(HttpStatus.CONFLICT)
+                        .build()
+                );
+    }
+
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ProblemDetail> handleResourceConflictException(ResourceConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ProblemDetailBuilder.builder()
+                        .message(ex.getMessage())
+                        .title("Resource Conflict")
                         .status(HttpStatus.CONFLICT)
                         .build()
                 );

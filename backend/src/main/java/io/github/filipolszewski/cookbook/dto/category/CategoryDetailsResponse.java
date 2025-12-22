@@ -7,6 +7,6 @@ public record CategoryDetailsResponse(
     @NotNull String name,
     @NotNull String slug,
     @NotNull String imgUrl,
-    @NotNull CategorySummaryResponse parent
+    CategorySummaryResponse parent
 ) {
 }

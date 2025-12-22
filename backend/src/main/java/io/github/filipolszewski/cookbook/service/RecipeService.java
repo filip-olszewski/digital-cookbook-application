@@ -8,6 +8,7 @@ import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.specification.SpecificationBuilder;
 import io.github.filipolszewski.cookbook.specification.criteria.RecipeSearchCriteria;
+import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +32,8 @@ public class RecipeService {
     public RecipeDetailsResponse getRecipe(String slug) {
         return recipeRepository.findBySlug(slug)
             .map(recipeMapper::toDetails)
-            .orElseThrow(() ->
-                new ResourceNotFoundException("Recipe with a slug of " + slug + " not found."));
+            .orElseThrow(() -> new ResourceNotFoundException(
+                ErrorMessageUtil.notFound(Recipe.class, "slug", slug)
+            ));
     }
 }

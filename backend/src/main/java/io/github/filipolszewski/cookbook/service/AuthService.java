@@ -11,6 +11,7 @@ import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
 import io.github.filipolszewski.cookbook.security.TokenService;
+import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -49,11 +50,15 @@ public class AuthService {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
         if(userRepository.existsByEmail(email)) {
-            throw new ResourceAlreadyExistsException("User with this address email is already registered!");
+            throw new ResourceAlreadyExistsException(
+                ErrorMessageUtil.exists(User.class, "email", email)
+            );
         }
 
         if(userRepository.existsByUsername(request.username())) {
-            throw new ResourceAlreadyExistsException("User with this username is already registered!");
+            throw new ResourceAlreadyExistsException(
+                ErrorMessageUtil.exists(User.class, "username", request.username())
+            );
         }
 
         User user = userMapper.toEntity(request);
