@@ -44,8 +44,8 @@ public class CategoryService {
     public CategoryDetailsResponse getCategory(String slug) {
         return categoryRepository.findBySlug(slug)
                 .map(categoryMapper::toDetails)
-                .orElseThrow(() ->
-                    new ResourceNotFoundException("Category with a slug of '" + slug + "' not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Category.class, "slug", slug)));
     }
 
     @Transactional
@@ -82,10 +82,7 @@ public class CategoryService {
         }
 
         // If either has subcategories or recipes belonging to it throw an error
-        boolean hasChildren = categoryRepository.existsByParentCategoryId(id);
-        boolean hasRecipes = recipeRepository.existsByCategoryId(id);
-
-        if(hasChildren || hasRecipes) {
+        if (categoryRepository.existsByParentCategoryId(id) || recipeRepository.existsByCategoryId(id)) {
             throw new ResourceConflictException(
                 "Cannot delete category that has sub-categories or recipes assigned.");
         }

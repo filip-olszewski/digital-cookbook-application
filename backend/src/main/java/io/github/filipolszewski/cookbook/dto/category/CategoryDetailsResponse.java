@@ -6,7 +6,7 @@ public record CategoryDetailsResponse(
     @NotNull Long id,
     @NotNull String name,
     @NotNull String slug,
-    @NotNull String imgUrl,
+    String imgUrl,
     CategorySummaryResponse parent
 ) {
 }
