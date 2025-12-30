@@ -55,7 +55,7 @@ class CategoryServiceTest {
         String slug = "dinner";
 
         var criteria = new CategorySearchCriteria("din", null, true);
-        Specification<Category> specification = (Specification<Category>) Mockito.mock(Specification.class);
+        Specification<Category> specification = (Specification<Category>) mock(Specification.class);
 
         var category = new Category();
         category.setName("dinner");

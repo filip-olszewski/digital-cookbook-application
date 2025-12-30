@@ -24,4 +24,10 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
     Integer getRecipeCountByAuthor(String username);
 
     boolean existsByCategoryId(Long categoryId);
+
+    @Query("""
+        SELECT COUNT(*) > 0 FROM Recipe r 
+        JOIN r.recipeIngredients ri WHERE ri.ingredient.id = :ingredientId
+    """)
+    boolean isIngredientUsed(Long ingredientId);
 }
