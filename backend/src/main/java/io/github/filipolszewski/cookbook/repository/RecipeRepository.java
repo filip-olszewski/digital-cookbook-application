@@ -30,4 +30,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
         JOIN r.recipeIngredients ri WHERE ri.ingredient.id = :ingredientId
     """)
     boolean isIngredientUsed(Long ingredientId);
+
+    boolean existsByIdAndAuthorEmail(Long id, String email);
 }

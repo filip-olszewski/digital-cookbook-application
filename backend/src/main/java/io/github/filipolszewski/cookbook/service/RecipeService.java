@@ -1,5 +1,6 @@
 package io.github.filipolszewski.cookbook.service;
 
+import io.github.filipolszewski.cookbook.dto.recipe.RecipeCreateRequest;
 import io.github.filipolszewski.cookbook.dto.recipe.RecipeDetailsResponse;
 import io.github.filipolszewski.cookbook.dto.recipe.RecipeSummaryResponse;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,5 +37,16 @@ public class RecipeService {
             .orElseThrow(() -> new ResourceNotFoundException(
                 ErrorMessageUtil.notFound(Recipe.class, "slug", slug)
             ));
+    }
+
+    @Transactional
+    public RecipeSummaryResponse createRecipe(RecipeCreateRequest request) {
+
+    }
+
+    @PreAuthorize("@recipeSecurity.isAuthorOrAdmin(#id, authentication)")
+    @Transactional
+    public void deleteRecipe(Long id) {
+
     }
 }

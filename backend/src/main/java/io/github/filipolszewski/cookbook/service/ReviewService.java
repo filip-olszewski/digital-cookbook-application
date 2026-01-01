@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
@@ -72,5 +73,15 @@ public class ReviewService {
         recipe.setReviewCount(reviewCount);
 
         recipeRepository.save(recipe);
+    }
+
+    @Transactional
+    public void deleteReview(String slug, Long id) {
+        if(!reviewRepository.existsByIdAndRecipeSlug(id, slug)) {
+            throw new ResourceNotFoundException(
+                    ErrorMessageUtil.notFound(Review.class, "id", "id"));
+        }
+
+        reviewRepository.deleteById(id);
     }
 }

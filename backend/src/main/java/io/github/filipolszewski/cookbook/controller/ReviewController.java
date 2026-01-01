@@ -29,7 +29,6 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getReviews(slug, pageable));
     }
 
-    @PreAuthorize("hasAuthority('USER')")
     @PostMapping("/recipes/{slug}/reviews")
     public ResponseEntity<ReviewResponse> postReview(
             @PathVariable String slug,
@@ -37,4 +36,14 @@ public class ReviewController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.postReview(slug, request));
     }
+
+    @DeleteMapping("/recipes/{slug}/reviews/{id}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable String slug,
+            @PathVariable Long id
+    ) {
+        reviewService.deleteReview(slug, id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

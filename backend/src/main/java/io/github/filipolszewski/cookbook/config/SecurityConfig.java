@@ -54,23 +54,29 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public Endpoints (Reading + Auth)
                 .requestMatchers(ApiConstants.API_V1 + "/auth/**").permitAll()
-                // Categories - Guests read only
                 .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/ingredients/**").permitAll()
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/tags/**").permitAll()
+                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/recipes/**").permitAll()
+
+                // Admin only
+                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/ingredients/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, ApiConstants.API_V1 + "/ingredients/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/ingredients/**").hasAuthority("ADMIN")
+
+                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/tags/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, ApiConstants.API_V1 + "/tags/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/tags/**").hasAuthority("ADMIN")
+
                 .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/categories/**").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, ApiConstants.API_V1 + "/categories/**").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/categories/**").hasAuthority("ADMIN")
-
-                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/recipes/**").permitAll()
-                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/tags/**").permitAll()
-                .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/ingredients/**").permitAll()
 
                 // Only authenticated user can see their own profile
                 .requestMatchers(ApiConstants.API_V1 + "/users/me").authenticated()
                 .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/users/*").permitAll()
 
-                // Admin Endpoints (Creating immutable resources)
-                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/ingredients/**").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/tags/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/recipes/**").authenticated()
 
                 .anyRequest().authenticated()
             )
