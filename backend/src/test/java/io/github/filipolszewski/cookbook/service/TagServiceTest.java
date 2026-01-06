@@ -92,21 +92,27 @@ class TagServiceTest {
     @Test
     void deleteTag_WhenIdExists_ShouldDelete() {
         Long id = 1L;
-        when(tagRepository.existsById(id)).thenReturn(true);
+        Tag tag = new Tag();
+        tag.setId(id);
+
+        when(tagRepository.findById(id)).thenReturn(Optional.of(tag));
 
         tagService.deleteTag(id);
 
-        verify(tagRepository).deleteById(id);
+        verify(tagRepository).findById(id);
+        verify(tagRepository).delete(tag);
     }
 
     @Test
     void deleteTag_WhenIdDoesNotExist_ShouldThrowResourceNotFoundException() {
         Long id = 1L;
-        when(tagRepository.existsById(id)).thenReturn(false);
+
+        when(tagRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> tagService.deleteTag(id));
 
-        verify(tagRepository, never()).deleteById(any());
+        verify(tagRepository).findById(id);
+        verify(tagRepository, never()).delete(any());
     }
 
     @Test

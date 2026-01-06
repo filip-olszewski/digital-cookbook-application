@@ -12,6 +12,7 @@ import org.mapstruct.Mapping;
 public interface ReviewMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "recipe", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Review toEntity(ReviewPostRequest request);
 
     @Mapping(target = "postedAt", source = "createdAt")

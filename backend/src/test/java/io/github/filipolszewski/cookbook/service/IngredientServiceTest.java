@@ -165,23 +165,26 @@ class IngredientServiceTest {
     void deleteIngredient_WhenIngredientDoesNotExist_ShouldThrowResourceNotFoundException() {
         Long id = 1L;
 
-        when(ingredientRepository.existsById(id)).thenReturn(false);
+        when(ingredientRepository.findById(id)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> {
             ingredientService.deleteIngredient(id);
         });
 
         assertEquals("Ingredient with id ['1'] not found.", ex.getMessage());
-        verify(ingredientRepository).existsById(eq(id));
-        verify(ingredientRepository, never()).deleteById(any());
+
+        verify(ingredientRepository).findById(eq(id));
+        verify(ingredientRepository, never()).delete(any());
     }
 
     @Test
     void deleteIngredient_WhenIngredientUsedByRecipes_ShouldThrowResourceConflictException() {
         Long id = 1L;
+        Ingredient ingredient = new Ingredient();
+        ingredient.setId(id);
 
-        when(ingredientRepository.existsById(id)).thenReturn(true);
-        when(recipeRepository.isIngredientUsed(id)).thenReturn(true);
+        when(ingredientRepository.findById(id)).thenReturn(Optional.of(ingredient));
+        when(recipeRepository.existsByIngredientId(id)).thenReturn(true); // Or isIngredientUsed(id) depending on your rename
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> {
             ingredientService.deleteIngredient(id);
@@ -189,23 +192,26 @@ class IngredientServiceTest {
 
         assertEquals("Cannot delete ingredient which is being used in active recipes",
                 ex.getMessage());
-        verify(ingredientRepository).existsById(eq(id));
-        verify(recipeRepository).isIngredientUsed(eq(id));
-        verify(ingredientRepository, never()).deleteById(any());
+
+        verify(ingredientRepository).findById(eq(id));
+        verify(recipeRepository).existsByIngredientId(eq(id));
+        verify(ingredientRepository, never()).delete(any());
     }
 
     @Test
     void deleteIngredient_WhenIngredientNotUsed_ShouldDelete() {
         Long id = 1L;
+        Ingredient ingredient = new Ingredient();
+        ingredient.setId(id);
 
-        when(ingredientRepository.existsById(id)).thenReturn(true);
-        when(recipeRepository.isIngredientUsed(id)).thenReturn(false);
+        when(ingredientRepository.findById(id)).thenReturn(Optional.of(ingredient));
+        when(recipeRepository.existsByIngredientId(id)).thenReturn(false);
 
         ingredientService.deleteIngredient(id);
 
-        verify(ingredientRepository).existsById(eq(id));
-        verify(recipeRepository).isIngredientUsed(eq(id));
-        verify(ingredientRepository).deleteById(eq(id));
+        verify(ingredientRepository).findById(eq(id));
+        verify(recipeRepository).existsByIngredientId(eq(id));
+        verify(ingredientRepository).delete(ingredient);
     }
 
     @Test

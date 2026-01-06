@@ -1,6 +1,7 @@
 package io.github.filipolszewski.cookbook.model.entity;
 
 import io.github.filipolszewski.cookbook.annotation.DatabaseUnique;
+import io.github.filipolszewski.cookbook.exception.ResourceConflictException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -10,7 +11,9 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -39,11 +42,45 @@ public class Category extends BaseEntity {
     @JoinColumn(name = "parent_id")
     private Category parentCategory;
 
-    @OneToMany(mappedBy = "parentCategory", fetch = FetchType.LAZY,
-        cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    private Set<Category> subCategories = new HashSet<>();
+    @OneToMany(
+            mappedBy = "parentCategory",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Category> subCategories = new ArrayList<>();
 
-    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY,
-        cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    private Set<Recipe> recipes = new HashSet<>();
+    // BUSINESS METHODS
+    public void moveTo(Category parent) {
+        if (parentCategory != null && parentCategory != parent) {
+            parentCategory.getSubCategories().remove(this);
+        }
+
+        if(parent == null) {
+            parentCategory = null;
+            return;
+        }
+
+        if(getId().equals(parent.getId())) {
+            throw new ResourceConflictException("Category cannot be its own parent.");
+        }
+
+        if (isDescendantOf(parent)) {
+            throw new ResourceConflictException("Cannot move a category into its own sub-category.");
+        }
+
+        parentCategory = parent;
+        parent.getSubCategories().add(this);
+    }
+
+    public boolean isDescendantOf(Category potentialAncestor) {
+        Category current = this.getParentCategory();
+        while (current != null) {
+            if (current.getId().equals(potentialAncestor.getId())) {
+                return true;
+            }
+            current = current.getParentCategory();
+        }
+        return false;
+    }
 }

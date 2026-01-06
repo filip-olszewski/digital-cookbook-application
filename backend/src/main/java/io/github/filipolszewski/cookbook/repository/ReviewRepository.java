@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Page<Review> findAllReviewsByRecipeSlug(String slug, Pageable pageable);
-    boolean existsByUserAndRecipe(User user, Recipe recipe);
-    boolean existsByIdAndRecipeSlug(Long id, String slug);
+    Page<Review> findAllReviewsByUserUsername(String username, Pageable pageable);
+    boolean existsByUserIdAndRecipeId(Long userId, Long recipeId);
+    boolean existsByIdAndUserEmail(Long id, String email);
 }

@@ -17,6 +17,8 @@ import org.hibernate.validator.constraints.Length;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE steps SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?") // <--- ADD THIS
+@SQLRestriction("deleted_at IS NULL")
 public class Step extends BaseEntity {
 
     public static final int MAX_INSTRUCTIONS_LENGTH = 5000;

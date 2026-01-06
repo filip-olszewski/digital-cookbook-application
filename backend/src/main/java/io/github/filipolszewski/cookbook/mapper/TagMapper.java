@@ -12,5 +12,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface TagMapper {
     TagResponse toResponse(Tag tag);
+
+    @Mapping(target = "id", ignore = true)
     Tag toEntity(TagCreateRequest request);
 }

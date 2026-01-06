@@ -3,6 +3,7 @@ package io.github.filipolszewski.cookbook.controller;
 import io.github.filipolszewski.cookbook.constant.ApiConstants;
 import io.github.filipolszewski.cookbook.dto.review.ReviewPostRequest;
 import io.github.filipolszewski.cookbook.dto.review.ReviewResponse;
+import io.github.filipolszewski.cookbook.dto.review.ReviewUpdateRequest;
 import io.github.filipolszewski.cookbook.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +23,19 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping("/recipes/{slug}/reviews")
-    public ResponseEntity<Page<ReviewResponse>> getReviews(
+    public ResponseEntity<Page<ReviewResponse>> getRecipeReviews(
             @PathVariable String slug,
-            @ParameterObject Pageable pageable
+            Pageable pageable
     ) {
-        return ResponseEntity.ok(reviewService.getReviews(slug, pageable));
+        return ResponseEntity.ok(reviewService.getRecipeReviews(slug, pageable));
+    }
+
+    @GetMapping("/users/{username}/reviews")
+    public ResponseEntity<Page<ReviewResponse>> getUserReviews(
+            @PathVariable String username,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(reviewService.getUserReviews(username, pageable));
     }
 
     @PostMapping("/recipes/{slug}/reviews")
@@ -44,6 +53,15 @@ public class ReviewController {
     ) {
         reviewService.deleteReview(slug, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/recipes/{slug}/reviews/{id}")
+    public ResponseEntity<ReviewResponse> updateReview(
+            @PathVariable String slug,
+            @PathVariable Long id,
+            @RequestBody @Valid ReviewUpdateRequest request
+    ) {
+        return ResponseEntity.ok(reviewService.updateReview(slug, id, request));
     }
 
 }

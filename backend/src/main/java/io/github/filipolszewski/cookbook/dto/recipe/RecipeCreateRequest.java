@@ -14,8 +14,9 @@ public record RecipeCreateRequest(
     @NotBlank String description,
     @NotNull Integer prepTime,
     @NotNull Integer servings,
+    String imgUrl,
     @NotNull Long categoryId,
-    @NotNull List<Long> tagIds,
+    List<Long> tagIds,
     @NotEmpty List<@Valid RecipeIngredientAddRequest> recipeIngredients,
     @NotEmpty List<@Valid StepAppendRequest> steps
 ) {}

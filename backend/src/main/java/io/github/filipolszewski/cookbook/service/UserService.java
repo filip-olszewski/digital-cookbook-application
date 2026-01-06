@@ -27,7 +27,7 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
                     new ResourceNotFoundException("Could not find a user with username: " + username));
-        int authoredRecipeCount = recipeRepository.getRecipeCountByAuthor(username);
+        int authoredRecipeCount = recipeRepository.countByAuthorUsername(username);
         return userMapper.toPublicDetails(user, authoredRecipeCount);
     }
 }

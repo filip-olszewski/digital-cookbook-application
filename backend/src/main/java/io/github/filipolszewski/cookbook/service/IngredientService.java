@@ -8,6 +8,7 @@ import io.github.filipolszewski.cookbook.exception.ResourceConflictException;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.IngredientMapper;
 import io.github.filipolszewski.cookbook.model.entity.Ingredient;
+import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.repository.IngredientRepository;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
@@ -38,45 +39,30 @@ public class IngredientService {
 
     @Transactional
     public IngredientSummaryResponse addIngredient(IngredientCreateRequest request) {
-        if(ingredientRepository.existsByName(request.name())) {
-            throw new ResourceAlreadyExistsException(
-                    ErrorMessageUtil.exists(Ingredient.class, "name", request.name()));
-        }
-
+        verifyIngredientNameUniqueness(request.name());
         Ingredient saved = ingredientRepository.save(ingredientMapper.toEntity(request));
         return ingredientMapper.toSummary(saved);
     }
 
     @Transactional
     public void deleteIngredient(Long id) {
-        if(!ingredientRepository.existsById(id)) {
-            throw new ResourceNotFoundException(
-                    ErrorMessageUtil.notFound(Ingredient.class, "id", id));
-        }
-
-        if(recipeRepository.isIngredientUsed(id)) {
+        if(recipeRepository.existsByIngredientId(id)) {
             throw new ResourceConflictException(
                     "Cannot delete ingredient which is being used in active recipes");
         }
 
-        ingredientRepository.deleteById(id);
+        ingredientRepository.delete(findIngredientById(id));
     }
 
     @Transactional
     public IngredientSummaryResponse updateIngredient(Long id, IngredientUpdateRequest request) {
-        Ingredient ingredient = ingredientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(Ingredient.class, "id", id)));
+        Ingredient ingredient = findIngredientById(id);
 
         if(request.name() != null &&
           !request.name().isBlank() &&
           !request.name().equals(ingredient.getName())
         ) {
-            if(ingredientRepository.existsByName(request.name())) {
-                throw new ResourceAlreadyExistsException(
-                        ErrorMessageUtil.exists(Ingredient.class, "name", request.name()));
-            }
-
+            verifyIngredientNameUniqueness(request.name());
             ingredient.setName(request.name());
         }
 
@@ -86,6 +72,19 @@ public class IngredientService {
 
         Ingredient saved = ingredientRepository.save(ingredient);
         return ingredientMapper.toSummary(saved);
+    }
+
+    private Ingredient findIngredientById(Long id) {
+        return ingredientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Ingredient.class, "id", id)));
+    }
+
+    private void verifyIngredientNameUniqueness(String name) {
+        if(ingredientRepository.existsByName(name)) {
+            throw new ResourceAlreadyExistsException(
+                    ErrorMessageUtil.exists(Ingredient.class, "name", name));
+        }
     }
 
 }

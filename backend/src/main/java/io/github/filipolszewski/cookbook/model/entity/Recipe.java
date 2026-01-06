@@ -11,9 +11,9 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "recipes")
@@ -64,7 +64,7 @@ public class Recipe extends BaseEntity {
     private Double averageRating = 0.0;
 
     /**
-     * Cached average rating for performance optimization.
+     * Cached review count for performance optimization.
      * Denormalized to enable efficient sorting and filtering.
      * Updates are handled by {@link io.github.filipolszewski.cookbook.service.ReviewService}.
      */
@@ -73,30 +73,29 @@ public class Recipe extends BaseEntity {
     private Integer reviewCount = 0;
 
     // RELATIONS
-    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
-            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, orphanRemoval = true)
-    private Set<RecipeIngredient> recipeIngredients = new HashSet<>();
+    @OneToMany(
+            mappedBy = "recipe",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<RecipeIngredient> recipeIngredients = new ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
-    @JoinTable(name = "recipe_tags",
+    @OneToMany(
+            mappedBy = "recipe",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Step> steps = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "recipe_tags",
             joinColumns = @JoinColumn(name = "recipe_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id"))
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
     private Set<Tag> tags = new HashSet<>();
-
-    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
-            cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH},
-            orphanRemoval = true)
-    private Set<Review> reviews = new HashSet<>();
-
-    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
-            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
-            orphanRemoval = true)
-    private Set<Favourite> favourites = new HashSet<>();
-
-    @OneToMany(mappedBy = "recipe", fetch = FetchType.LAZY,
-            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
-            orphanRemoval = true)
-    private Set<Step> steps = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
@@ -105,4 +104,43 @@ public class Recipe extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
+
+    // BUSINESS METHODS
+    public void updateStatistics(Double averageRating, Integer reviewCount) {
+        this.averageRating = averageRating == null ? 0.0 : averageRating;
+        this.reviewCount = reviewCount == null ? 0 : reviewCount;
+    }
+
+    // AGGREGATE ROOT HELPER METHODS
+    public void addRecipeIngredient(RecipeIngredient newIngredient) {
+        newIngredient.setRecipe(this);
+        recipeIngredients.add(newIngredient);
+    }
+
+    public void replaceRecipeIngredients(List<RecipeIngredient> newIngredients) {
+        recipeIngredients.clear();
+
+        if (newIngredients != null) {
+            newIngredients.forEach(this::addRecipeIngredient);
+        }
+    }
+
+    public void addStep(Step step) {
+        step.setRecipe(this);
+        steps.add(step);
+    }
+
+    public void replaceSteps(List<Step> newSteps) {
+        steps.clear();
+        if (newSteps != null) {
+            newSteps.forEach(this::addStep);
+        }
+    }
+
+    public void replaceTags(Set<Tag> newTags) {
+        tags.clear();
+        if (newTags != null) {
+            tags.addAll(newTags);
+        }
+    }
 }

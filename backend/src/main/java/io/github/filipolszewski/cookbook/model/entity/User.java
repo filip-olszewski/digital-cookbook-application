@@ -3,6 +3,7 @@ package io.github.filipolszewski.cookbook.model.entity;
 import io.github.filipolszewski.cookbook.annotation.DatabaseUnique;
 import io.github.filipolszewski.cookbook.model.embeddable.Name;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
+import jakarta.annotation.PreDestroy;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -12,7 +13,9 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -50,20 +53,4 @@ public class User extends BaseEntity {
     private String bio;
 
     private String avatarUrl;
-
-    // RELATIONS
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,
-            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
-            orphanRemoval = true)
-    private Set<Review> reviews = new HashSet<>();
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,
-            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
-            orphanRemoval = true)
-    private Set<Favourite> favourites = new HashSet<>();
-
-    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY,
-            cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH},
-            orphanRemoval = true)
-    private Set<Recipe> createdRecipes = new HashSet<>();
 }

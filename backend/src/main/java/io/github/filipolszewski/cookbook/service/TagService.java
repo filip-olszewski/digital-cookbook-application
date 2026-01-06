@@ -8,6 +8,7 @@ import io.github.filipolszewski.cookbook.exception.ResourceAlreadyExistsExceptio
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.TagMapper;
 import io.github.filipolszewski.cookbook.model.entity.Ingredient;
+import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.model.entity.Tag;
 import io.github.filipolszewski.cookbook.repository.TagRepository;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
@@ -25,6 +26,8 @@ public class TagService {
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
 
+    private final Slugify slugify = Slugify.builder().build();
+
     public List<TagResponse> getTags() {
         return tagRepository.findAll().stream()
                 .map(tagMapper::toResponse)
@@ -33,12 +36,9 @@ public class TagService {
 
     @Transactional
     public TagResponse addTag(TagCreateRequest request) {
-        String slug = Slugify.builder().build().slugify(request.label());
 
-        if(tagRepository.existsBySlug(slug)) {
-            throw new ResourceAlreadyExistsException(
-                    ErrorMessageUtil.exists(Tag.class, "slug", slug));
-        }
+        String slug = slugify.slugify(request.label());
+        verifyTagSlugUniqueness(slug);
 
         Tag tag = tagMapper.toEntity(request);
         tag.setSlug(slug);
@@ -49,35 +49,43 @@ public class TagService {
 
     @Transactional
     public void deleteTag(Long id) {
-        if(!tagRepository.existsById(id)) {
-            throw new ResourceNotFoundException(
-                    ErrorMessageUtil.notFound(Tag.class, "id", id));
-        }
-
-        tagRepository.deleteById(id);
+        Tag tag = findTagById(id);
+        tagRepository.detachTagFromAllRecipes(id);
+        tagRepository.delete(tag);
     }
 
     @Transactional
     public TagResponse updateTag(Long id, TagUpdateRequest request) {
-        Tag tag = tagRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(Tag.class, "id", id)));
+
+        Tag tag = findTagById(id);
 
         if(request.label() != null &&
           !request.label().isBlank() &&
           !request.label().equals(tag.getLabel())) {
-            String slug = Slugify.builder().build().slugify(request.label());
-
-            if(tagRepository.existsBySlug(slug)) {
-                throw new ResourceAlreadyExistsException(
-                        ErrorMessageUtil.exists(Tag.class, "slug", slug));
-            }
 
             tag.setLabel(request.label());
-            tag.setSlug(slug);
+
+            String slug = slugify.slugify(request.label());
+            if(!slug.equals(tag.getSlug())) {
+                verifyTagSlugUniqueness(slug);
+                tag.setSlug(slug);
+            }
         }
 
         Tag saved = tagRepository.save(tag);
         return tagMapper.toResponse(saved);
+    }
+
+    private Tag findTagById(Long id) {
+        return tagRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Tag.class, "id", id)));
+    }
+
+    private void verifyTagSlugUniqueness(String slug) {
+        if(tagRepository.existsBySlug(slug)) {
+            throw new ResourceAlreadyExistsException(
+                    ErrorMessageUtil.exists(Tag.class, "slug", slug));
+        }
     }
 }

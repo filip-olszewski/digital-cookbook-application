@@ -31,8 +31,4 @@ public class Tag extends BaseEntity {
     @Column(nullable = false)
     @DatabaseUnique
     private String slug;
-
-    // RELATIONS
-    @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
-    private Set<Recipe> recipes = new HashSet<>();
 }

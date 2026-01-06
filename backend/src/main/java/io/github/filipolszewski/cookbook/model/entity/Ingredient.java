@@ -12,9 +12,6 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
 @Table(name = "ingredients")
 @Getter
@@ -34,8 +31,4 @@ public class Ingredient extends BaseEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private IngredientType type;
-
-    // RELATIONS
-    @OneToMany(mappedBy = "ingredient", fetch = FetchType.LAZY)
-    private Set<RecipeIngredient> recipeIngredients = new HashSet<>();
 }
