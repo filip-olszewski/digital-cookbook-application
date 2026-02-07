@@ -10,18 +10,19 @@ import io.github.filipolszewski.cookbook.exception.ResourceConflictException;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.CategoryMapper;
 import io.github.filipolszewski.cookbook.model.entity.Category;
-import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.repository.CategoryRepository;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.specification.SpecificationBuilder;
 import io.github.filipolszewski.cookbook.specification.criteria.CategorySearchCriteria;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
+import io.github.filipolszewski.cookbook.util.UpdateUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,7 @@ public class CategoryService {
 
     private final RecipeRepository recipeRepository;
 
-    private final Slugify slugify = Slugify.builder().build();
+    private final Slugify slugify;
 
     public List<CategorySummaryResponse> getCategories(CategorySearchCriteria criteria) {
         Specification<Category> spec = specificationBuilder.build(criteria);
@@ -44,7 +45,7 @@ public class CategoryService {
     }
 
     public CategoryDetailsResponse getCategory(String slug) {
-        return categoryRepository.findBySlug(slug)
+        return categoryRepository.findBySlugWithParent(slug)
                 .map(categoryMapper::toDetails)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessageUtil.notFound(Category.class, "slug", slug)));
@@ -53,14 +54,19 @@ public class CategoryService {
     @Transactional
     public CategorySummaryResponse createCategory(CategoryCreateRequest request) {
         String slug = slugify.slugify(request.name());
-        verifyCategorySlugUniqueness(slug);
+
+        // Does the slug already exist?
+        if(categoryRepository.existsBySlug(slug)) {
+            throw new ResourceAlreadyExistsException(
+                    ErrorMessageUtil.exists(Category.class, "slug", slug));
+        }
 
         Category category = categoryMapper.toEntity(request);
         category.setSlug(slug);
 
         if(request.parentId() != null) {
-            Category parent = findCategoryById(request.parentId());
-            category.moveTo(parent);
+            Category parent = findCategoryByIdWithSubcategories(request.parentId());
+            moveCategory(category, parent);
         }
 
         Category saved = categoryRepository.save(category);
@@ -75,49 +81,87 @@ public class CategoryService {
                 "Cannot delete category that has sub-categories or recipes assigned.");
         }
 
-        categoryRepository.delete(findCategoryById(id));
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Category.class, "id", id)));
+        categoryRepository.delete(category);
     }
 
     @Transactional
     public CategoryDetailsResponse updateCategory(Long id, CategoryUpdateRequest request) {
-        Category category = findCategoryById(id);
-        categoryMapper.updateBasicFields(category, request);
+        // Fetch category along with its parent
+        Category category = categoryRepository.findByIdWithParent(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Category.class, "id", id)));
 
-        if (request.name() != null &&
-           !request.name().isBlank() &&
-           !request.name().equals(category.getName())) {
+        // Update basic fields if provided
+        categoryMapper.update(category, request);
 
+        // Update name if changed and not blank (slug stays the same - for compatibility)
+        if (UpdateUtil.isChanged(request.name(), category.getName())) {
             category.setName(request.name());
-
-            String newSlug = slugify.slugify(request.name());
-            if (!newSlug.equals(category.getSlug())) {
-                verifyCategorySlugUniqueness(newSlug);
-                category.setSlug(newSlug);
-            }
         }
 
-        if (request.parentId().isPresent() &&
-           !request.parentId().get().equals(category.getParentCategory().getId())) {
+        if (request.parentId().isPresent()) {
+            Long newParentId = request.parentId().get();
+            Long currentParentId = (category.getParentCategory() != null)
+                    ? category.getParentCategory().getId()
+                    : null;
 
-            Long parentId = request.parentId().get();
-            category.moveTo(parentId == null ? null : findCategoryById(parentId));
+            // Is the new parent same as the old parent?
+            if (!Objects.equals(newParentId, currentParentId)) {
+
+                // If explicitly null, set it to null (make it a root category)
+                if (newParentId == null) {
+                    category.setParentCategory(null);
+                }
+                // Fetch parent category along with its subcategories and move current category into the new parent
+                else {
+                    Category parent = findCategoryByIdWithSubcategories(newParentId);
+                    moveCategory(category, parent);
+                }
+            }
         }
 
         Category savedCategory = categoryRepository.save(category);
         return categoryMapper.toDetails(savedCategory);
     }
 
+    public void moveCategory(Category category, Category newParent) {
+        if(category.getId().equals(newParent.getId())) {
+            throw new ResourceConflictException("Category cannot be its own parent.");
+        }
 
-    private Category findCategoryById(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(Category.class, "id", id)));
+        if (isCycle(category, newParent)) {
+            throw new ResourceConflictException("Cannot move a category into its own sub-category.");
+        }
+
+        category.setParentCategory(newParent);
+        newParent.getSubCategories().add(category);
     }
 
-    private void verifyCategorySlugUniqueness(String slug) {
-        if(categoryRepository.existsBySlug(slug)) {
-            throw new ResourceAlreadyExistsException(
-                    ErrorMessageUtil.exists(Category.class, "slug", slug));
+    /**
+     * Checks whether category's new parent is its own subcategory. If true, ends up with infinite cycle
+     * of parent category and its children. Verifies that does not happen.
+     * Usually depth of categories should not exceed 4 or 5, so the expense of iterations is manageable.
+     * @param target        The category which we try to move under a new parent.
+     * @param newParent     The new parent category we try to set on the target category.
+     * @return              Whether the move results in a cycle.
+     */
+    public boolean isCycle(Category target, Category newParent) {
+        Category current = newParent;
+        while (current != null) {
+            if (current.getId().equals(target.getId())) {
+                return true;
+            }
+            current = current.getParentCategory();
         }
+        return false;
+    }
+
+    private Category findCategoryByIdWithSubcategories(Long id) {
+        return categoryRepository.findByIdWithSubcategories(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Category.class, "id", id)));
     }
 }

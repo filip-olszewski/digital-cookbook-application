@@ -9,13 +9,13 @@ import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.model.entity.Step;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface StepMapper {
     StepResponse toResponse(Step step);
-
-    @Mapping(target = "imgUrl", source = "request.imgUrl")
-    @Mapping(target = "recipe", ignore = true)
-    @Mapping(target = "id", ignore = true)
     Step toEntity(StepAppendRequest request);
 }

@@ -6,13 +6,16 @@ import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface UserMapper {
     @Mapping(target = "name.firstName", source = "firstName")
     @Mapping(target = "name.middleName", source = "middleName")
     @Mapping(target = "name.lastName", source = "lastName")
-    @Mapping(target = "role", ignore = true)
     User toEntity(SignupRequest request);
 
     @Mapping(target = "fullName", source = "name.fullName")

@@ -22,8 +22,9 @@ public class RecipeSpecificationBuilder implements SpecificationBuilder<Recipe, 
     }
 
     private Specification<Recipe> hasAuthor(String author) {
-        return (root, query, cb) ->
-            cb.equal(root.get("author").get("username"), author);
+        return (root, query, cb) -> {
+            return cb.equal(root.get("author").get("username"), author);
+        };
     }
 
     private Specification<Recipe> hasPrepTime(Integer maxPrepTime) {
@@ -38,7 +39,6 @@ public class RecipeSpecificationBuilder implements SpecificationBuilder<Recipe, 
 
     private Specification<Recipe> containsTag(List<String> tagSlugs) {
         return (root, query, cb) -> {
-
             Join<Tag, Recipe> tags = root.join("tags", JoinType.LEFT);
             return tags.get("slug").in(tagSlugs);
         };
@@ -53,6 +53,8 @@ public class RecipeSpecificationBuilder implements SpecificationBuilder<Recipe, 
     public Specification<Recipe> build(RecipeSearchCriteria criteria) {
         Specification<Recipe> spec = (root, query, cb) ->
             cb.conjunction();
+
+        if(criteria == null) return spec;
 
         if(criteria.name() != null && !criteria.name().isBlank()) {
             spec = spec.and(hasName(criteria.name()));

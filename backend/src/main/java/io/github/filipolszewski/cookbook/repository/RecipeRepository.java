@@ -1,10 +1,12 @@
 package io.github.filipolszewski.cookbook.repository;
 
 import io.github.filipolszewski.cookbook.model.entity.Recipe;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,20 +14,19 @@ import java.util.Optional;
 @Repository
 public interface RecipeRepository extends JpaRepository<Recipe, Long>,
         JpaSpecificationExecutor<Recipe> {
+
+    @Override
+    @EntityGraph(attributePaths = {"tags", "author", "category"})
+    Page<Recipe> findAll(Specification<Recipe> specification, Pageable pageable);
+
+    @EntityGraph(attributePaths = {
+            "recipeIngredients", "steps", "tags",
+            "author", "category", "recipeIngredients.ingredient"
+    })
     Optional<Recipe> findBySlug(String slug);
-    boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, Long id);
-
-    @Query("SELECT COALESCE(AVG(rv.rating), 0.0) FROM Review rv WHERE rv.recipe.id = :id")
-    Double getAverageRating(Long id);
-
-    @Query("SELECT COUNT(*) FROM Review rv WHERE rv.recipe.id = :id")
-    Integer countReviewsByRecipeId(Long id);
-
-    @Query("SELECT COUNT(*) FROM Recipe r WHERE r.author.username = :username")
-    Integer countByAuthorUsername(String username);
 
     boolean existsByCategoryId(Long categoryId);
+    boolean existsByIdAndAuthorEmail(Long id, String email);
 
     @Query("""
         SELECT COUNT(*) > 0 FROM Recipe r 
@@ -33,8 +34,39 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
     """)
     boolean existsByIngredientId(Long ingredientId);
 
-    boolean existsByIdAndAuthorEmail(Long id, String email);
+    @Query("SELECT COUNT(*) FROM Recipe r WHERE r.author.username = :username")
+    Integer countByAuthorUsername(String username);
 
     @Query("SELECT r.slug FROM Recipe r WHERE r.slug LIKE :slug%")
     List<String> findSlugsStartingWith(String slug);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE Recipe r 
+            SET r.averageRating = ((r.averageRating * r.reviewCount) + :rating) / (r.reviewCount + 1),
+                r.reviewCount = r.reviewCount + 1 
+                WHERE r.id = :id
+            """)
+    void addReviewRating(Long id, int rating);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE Recipe r
+            SET r.averageRating = CASE 
+                WHEN r.reviewCount <= 1 
+                THEN 0.0 
+                ELSE ((r.averageRating * r.reviewCount) - :rating) / (r.reviewCount - 1)
+            END,
+                r.reviewCount = r.reviewCount -1
+            WHERE r.id = :id AND r.reviewCount > 0
+            """)
+    void removeReviewRating(Long id, int rating);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE Recipe r 
+            SET r.averageRating = ((r.averageRating * r.reviewCount) + :newRating - :oldRating) / r.reviewCount 
+            WHERE r.id = :id
+            """)
+    void updateReviewRating(Long id, int oldRating, int newRating);
 }

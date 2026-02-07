@@ -51,37 +51,35 @@ public class RecipeService {
     private final StepMapper stepMapper;
 
     private final UserContext userContext;
-
-    private final Slugify slugify = Slugify.builder().build();
+    private final Slugify slugify;
 
     public Page<RecipeSummaryResponse> getRecipes(RecipeSearchCriteria criteria, Pageable pageable) {
-        Page<Recipe> recipes = recipeRepository.findAll(specificationBuilder.build(criteria), pageable);
-        return recipes.map(recipeMapper::toSummary);
+        return recipeRepository.findAll(specificationBuilder.build(criteria), pageable)
+                .map(recipeMapper::toSummary);
     }
 
     public RecipeDetailsResponse getRecipe(String slug) {
         return recipeRepository.findBySlug(slug)
             .map(recipeMapper::toDetails)
             .orElseThrow(() -> new ResourceNotFoundException(
-                ErrorMessageUtil.notFound(Recipe.class, "slug", slug)
-            ));
+                    ErrorMessageUtil.notFound(Recipe.class, "slug", slug)));
     }
 
     @Transactional
     public RecipeSummaryResponse createRecipe(RecipeCreateRequest request) {
 
         Recipe recipe = recipeMapper.toEntity(request);
-        recipe.setAuthor(userContext.getCurrentUser());
+        //recipe.setAuthor(getCurrentUser(userContext.getCurrentUserId()));
+        recipe.setAuthor(getCurrentUser(1L));
         recipe.setPublicationDate(LocalDate.now());
         recipe.setSlug(generateUniqueSlug(request.name()));
 
         recipe.setCategory(findCategory(request.categoryId()));
         recipe.replaceTags(findTags(request.tagIds()));
-        recipe.replaceRecipeIngredients(mapRecipeIngredients(request.recipeIngredients(), recipe));
+        recipe.replaceIngredients(mapRecipeIngredients(request.recipeIngredients(), recipe));
         recipe.replaceSteps(mapSteps(request.steps(), recipe));
 
-        Recipe saved = recipeRepository.save(recipe);
-        return recipeMapper.toSummary(saved);
+        return recipeMapper.toSummary(recipeRepository.save(recipe));
     }
 
     @Transactional
@@ -121,7 +119,7 @@ public class RecipeService {
         }
 
         if(request.recipeIngredients() != null) {
-            recipe.replaceRecipeIngredients(mapRecipeIngredients(request.recipeIngredients(), recipe));
+            recipe.replaceIngredients(mapRecipeIngredients(request.recipeIngredients(), recipe));
         }
 
         if(request.steps() != null) {
@@ -150,6 +148,12 @@ public class RecipeService {
         }
 
         return candidate;
+    }
+
+    private User getCurrentUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(User.class, "id", id)));
     }
 
     private Recipe findRecipeById(Long id) {

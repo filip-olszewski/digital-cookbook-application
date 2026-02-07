@@ -10,9 +10,13 @@ import io.github.filipolszewski.cookbook.model.entity.Tag;
 import io.github.filipolszewski.cookbook.repository.TagRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +41,7 @@ class TagServiceTest {
     void getTags_ShouldReturnListOfTags() {
         Tag tag = new Tag();
         tag.setId(1L);
-        TagResponse response = new TagResponse(1L, "Vegan", "vegan");
+        TagResponse response = new TagResponse(1L, "Vegan");
 
         when(tagRepository.findAll()).thenReturn(List.of(tag));
         when(tagMapper.toResponse(tag)).thenReturn(response);
@@ -49,9 +53,8 @@ class TagServiceTest {
     }
 
     @Test
-    void addTag_WhenSlugIsUnique_ShouldSaveAndReturnTag() {
+    void addTag_WhenLabelIsUnique_ShouldSaveAndReturnTag() {
         String label = "Gluten Free";
-        String expectedSlug = "gluten-free"; // Slugify standard behavior
         TagCreateRequest request = new TagCreateRequest(label);
 
         Tag tagEntity = new Tag();
@@ -60,11 +63,10 @@ class TagServiceTest {
         Tag savedTag = new Tag();
         savedTag.setId(1L);
         savedTag.setLabel(label);
-        savedTag.setSlug(expectedSlug);
 
-        TagResponse expectedResponse = new TagResponse(1L, label, expectedSlug);
+        TagResponse expectedResponse = new TagResponse(1L, label);
 
-        when(tagRepository.existsBySlug(expectedSlug)).thenReturn(false);
+        when(tagRepository.existsByLabel(label)).thenReturn(false);
         when(tagMapper.toEntity(request)).thenReturn(tagEntity);
         when(tagRepository.save(tagEntity)).thenReturn(savedTag);
         when(tagMapper.toResponse(savedTag)).thenReturn(expectedResponse);
@@ -72,17 +74,16 @@ class TagServiceTest {
         TagResponse result = tagService.addTag(request);
 
         assertNotNull(result);
-        assertEquals(expectedSlug, result.slug());
+        assertEquals(label, result.label());
         verify(tagRepository).save(tagEntity);
     }
 
     @Test
-    void addTag_WhenSlugAlreadyExists_ShouldThrowResourceAlreadyExistsException() {
+    void addTag_WhenLabelAlreadyExists_ShouldThrowResourceAlreadyExistsException() {
         String label = "Vegan";
-        String expectedSlug = "vegan";
         TagCreateRequest request = new TagCreateRequest(label);
 
-        when(tagRepository.existsBySlug(expectedSlug)).thenReturn(true);
+        when(tagRepository.existsByLabel(label)).thenReturn(true);
 
         assertThrows(ResourceAlreadyExistsException.class, () -> tagService.addTag(request));
 
@@ -116,41 +117,35 @@ class TagServiceTest {
     }
 
     @Test
-    void updateTag_WhenLabelChangedAndUnique_ShouldUpdateLabelAndSlug() {
+    void updateTag_WhenLabelChangedAndUnique_ShouldUpdateTag() {
         Long id = 1L;
         String newLabel = "New Label";
-        String expectedSlug = "new-label";
         TagUpdateRequest request = new TagUpdateRequest(newLabel);
 
         Tag existingTag = new Tag();
         existingTag.setId(id);
         existingTag.setLabel("Old Label");
-        existingTag.setSlug("old-label");
 
         Tag savedTag = new Tag();
         savedTag.setId(id);
         savedTag.setLabel(newLabel);
-        savedTag.setSlug(expectedSlug);
 
-        TagResponse expectedResponse = new TagResponse(id, newLabel, expectedSlug);
+        TagResponse expectedResponse = new TagResponse(id, newLabel);
 
         when(tagRepository.findById(id)).thenReturn(Optional.of(existingTag));
-        when(tagRepository.existsBySlug(expectedSlug)).thenReturn(false);
+        when(tagRepository.existsByLabel(newLabel)).thenReturn(false);
         when(tagRepository.save(existingTag)).thenReturn(savedTag);
         when(tagMapper.toResponse(savedTag)).thenReturn(expectedResponse);
 
         TagResponse result = tagService.updateTag(id, request);
 
-        assertEquals(expectedSlug, result.slug());
         assertEquals(newLabel, result.label());
 
-        verify(tagRepository).save(argThat(t ->
-                t.getSlug().equals(expectedSlug) && t.getLabel().equals(newLabel)
-        ));
+        verify(tagRepository).save(eq(existingTag));
     }
 
     @Test
-    void updateTag_WhenLabelIsSameAsCurrent_ShouldNotCheckSlugOrUpdateValues() {
+    void updateTag_WhenLabelIsSameAsCurrent_ShouldNotUpdateValues() {
         Long id = 1L;
         String currentLabel = "Spicy";
         TagUpdateRequest request = new TagUpdateRequest(currentLabel);
@@ -158,9 +153,8 @@ class TagServiceTest {
         Tag existingTag = new Tag();
         existingTag.setId(id);
         existingTag.setLabel(currentLabel);
-        existingTag.setSlug("spicy");
 
-        TagResponse expectedResponse = new TagResponse(id, currentLabel, "spicy");
+        TagResponse expectedResponse = new TagResponse(id, currentLabel);
 
         when(tagRepository.findById(id)).thenReturn(Optional.of(existingTag));
         when(tagRepository.save(existingTag)).thenReturn(existingTag);
@@ -168,19 +162,19 @@ class TagServiceTest {
 
         tagService.updateTag(id, request);
 
-        verify(tagRepository, never()).existsBySlug(any());
+        verify(tagRepository, never()).existsByLabel(any());
         verify(tagRepository).save(existingTag);
     }
 
-    @Test
-    void updateTag_WhenLabelIsBlank_ShouldNotUpdateValues() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void updateTag_WhenLabelIsNullOrBlank_ShouldNotUpdateValues(String value) {
         Long id = 1L;
         TagUpdateRequest request = new TagUpdateRequest("");
 
         Tag existingTag = new Tag();
         existingTag.setId(id);
         existingTag.setLabel("Original");
-        existingTag.setSlug("original");
 
         when(tagRepository.findById(id)).thenReturn(Optional.of(existingTag));
         when(tagRepository.save(existingTag)).thenReturn(existingTag);
@@ -188,7 +182,7 @@ class TagServiceTest {
 
         tagService.updateTag(id, request);
 
-        verify(tagRepository, never()).existsBySlug(any());
+        verify(tagRepository, never()).existsByLabel(any());
         verify(tagRepository).save(argThat(t -> t.getLabel().equals("Original")));
     }
 
@@ -204,10 +198,9 @@ class TagServiceTest {
     }
 
     @Test
-    void updateTag_WhenNewSlugAlreadyExists_ShouldThrowException() {
+    void updateTag_WhenNewLabelDuplicate_ShouldThrowException() {
         Long id = 1L;
         String newLabel = "Existing Label";
-        String newSlug = "existing-label";
         TagUpdateRequest request = new TagUpdateRequest(newLabel);
 
         Tag existingTag = new Tag();
@@ -215,7 +208,7 @@ class TagServiceTest {
         existingTag.setLabel("Old Label");
 
         when(tagRepository.findById(id)).thenReturn(Optional.of(existingTag));
-        when(tagRepository.existsBySlug(newSlug)).thenReturn(true);
+        when(tagRepository.existsByLabel(newLabel)).thenReturn(true);
 
         assertThrows(ResourceAlreadyExistsException.class, () -> tagService.updateTag(id, request));
 

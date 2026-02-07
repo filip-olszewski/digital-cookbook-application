@@ -25,10 +25,6 @@ public class Tag extends BaseEntity {
 
     @NotBlank
     @Column(nullable = false)
-    private String label;
-
-    @NotBlank
-    @Column(nullable = false)
     @DatabaseUnique
-    private String slug;
+    private String label;
 }

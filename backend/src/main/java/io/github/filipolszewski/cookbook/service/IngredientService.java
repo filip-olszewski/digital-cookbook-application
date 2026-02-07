@@ -1,6 +1,6 @@
 package io.github.filipolszewski.cookbook.service;
 
-import io.github.filipolszewski.cookbook.dto.ingredient.IngredientCreateRequest;
+import  io.github.filipolszewski.cookbook.dto.ingredient.IngredientCreateRequest;
 import io.github.filipolszewski.cookbook.dto.ingredient.IngredientSummaryResponse;
 import io.github.filipolszewski.cookbook.dto.ingredient.IngredientUpdateRequest;
 import io.github.filipolszewski.cookbook.exception.ResourceAlreadyExistsException;
@@ -8,10 +8,10 @@ import io.github.filipolszewski.cookbook.exception.ResourceConflictException;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.IngredientMapper;
 import io.github.filipolszewski.cookbook.model.entity.Ingredient;
-import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.repository.IngredientRepository;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
+import io.github.filipolszewski.cookbook.util.UpdateUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +39,7 @@ public class IngredientService {
 
     @Transactional
     public IngredientSummaryResponse addIngredient(IngredientCreateRequest request) {
-        verifyIngredientNameUniqueness(request.name());
+        checkExistsByName(request.name());
         Ingredient saved = ingredientRepository.save(ingredientMapper.toEntity(request));
         return ingredientMapper.toSummary(saved);
     }
@@ -58,12 +58,11 @@ public class IngredientService {
     public IngredientSummaryResponse updateIngredient(Long id, IngredientUpdateRequest request) {
         Ingredient ingredient = findIngredientById(id);
 
-        if(request.name() != null &&
-          !request.name().isBlank() &&
-          !request.name().equals(ingredient.getName())
-        ) {
-            verifyIngredientNameUniqueness(request.name());
-            ingredient.setName(request.name());
+        String newName = request.name();
+
+        if(UpdateUtil.isChanged(newName, ingredient.getName())) {
+            checkExistsByName(newName);
+            ingredient.setName(newName);
         }
 
         if(request.type() != null) {
@@ -80,7 +79,7 @@ public class IngredientService {
                         ErrorMessageUtil.notFound(Ingredient.class, "id", id)));
     }
 
-    private void verifyIngredientNameUniqueness(String name) {
+    private void checkExistsByName(String name) {
         if(ingredientRepository.existsByName(name)) {
             throw new ResourceAlreadyExistsException(
                     ErrorMessageUtil.exists(Ingredient.class, "name", name));

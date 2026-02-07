@@ -27,7 +27,6 @@ public interface RecipeMapper {
 
     @Mapping(target = "ingredients", source = "recipeIngredients")
     @Mapping(target = "rating", source = "averageRating")
-    @Mapping(target = "favouriteCount", source = "favourites", qualifiedByName = "calculateTotalLikes")
     RecipeDetailsResponse toDetails(Recipe recipe);
 
     @Mapping(target = "authorName", source = "author.name.fullName", defaultValue = "Unknown")
@@ -46,8 +45,6 @@ public interface RecipeMapper {
     @Mapping(target = "steps", ignore = true)
     @Mapping(target = "averageRating", ignore = true)
     @Mapping(target = "reviewCount", ignore = true)
-    @Mapping(target = "reviews", ignore = true)
-    @Mapping(target = "favourites", ignore = true)
     Recipe toEntity(RecipeCreateRequest request);
 
     @BeanMapping(ignoreByDefault = true)

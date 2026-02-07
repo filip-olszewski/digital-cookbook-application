@@ -1,22 +1,24 @@
 package io.github.filipolszewski.cookbook.service;
 
-import com.github.slugify.Slugify;
 import io.github.filipolszewski.cookbook.dto.tag.TagCreateRequest;
 import io.github.filipolszewski.cookbook.dto.tag.TagResponse;
 import io.github.filipolszewski.cookbook.dto.tag.TagUpdateRequest;
 import io.github.filipolszewski.cookbook.exception.ResourceAlreadyExistsException;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.TagMapper;
-import io.github.filipolszewski.cookbook.model.entity.Ingredient;
-import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.model.entity.Tag;
 import io.github.filipolszewski.cookbook.repository.TagRepository;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
+import io.github.filipolszewski.cookbook.util.UpdateUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+// TODO: Adjust Caches
 
 @Service
 @RequiredArgsConstructor
@@ -26,54 +28,42 @@ public class TagService {
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
 
-    private final Slugify slugify = Slugify.builder().build();
-
+    @Cacheable("tags")
     public List<TagResponse> getTags() {
         return tagRepository.findAll().stream()
                 .map(tagMapper::toResponse)
                 .toList();
     }
 
+    @CacheEvict(value = "tags", allEntries = true)
     @Transactional
     public TagResponse addTag(TagCreateRequest request) {
+        String newLabel = request.label();
 
-        String slug = slugify.slugify(request.label());
-        verifyTagSlugUniqueness(slug);
+        checkExistsByLabel(newLabel);
 
         Tag tag = tagMapper.toEntity(request);
-        tag.setSlug(slug);
-
-        Tag saved = tagRepository.save(tag);
-        return tagMapper.toResponse(saved);
+        return tagMapper.toResponse(tagRepository.save(tag));
     }
 
+    @CacheEvict(value = "tags", allEntries = true)
     @Transactional
     public void deleteTag(Long id) {
-        Tag tag = findTagById(id);
         tagRepository.detachTagFromAllRecipes(id);
-        tagRepository.delete(tag);
+        tagRepository.delete(findTagById(id));
     }
 
     @Transactional
     public TagResponse updateTag(Long id, TagUpdateRequest request) {
-
         Tag tag = findTagById(id);
+        String newLabel = request.label();
 
-        if(request.label() != null &&
-          !request.label().isBlank() &&
-          !request.label().equals(tag.getLabel())) {
-
-            tag.setLabel(request.label());
-
-            String slug = slugify.slugify(request.label());
-            if(!slug.equals(tag.getSlug())) {
-                verifyTagSlugUniqueness(slug);
-                tag.setSlug(slug);
-            }
+        if(UpdateUtil.isChanged(newLabel, tag.getLabel())) {
+            checkExistsByLabel(newLabel);
+            tag.setLabel(newLabel);
         }
 
-        Tag saved = tagRepository.save(tag);
-        return tagMapper.toResponse(saved);
+        return tagMapper.toResponse(tagRepository.save(tag));
     }
 
     private Tag findTagById(Long id) {
@@ -82,10 +72,10 @@ public class TagService {
                         ErrorMessageUtil.notFound(Tag.class, "id", id)));
     }
 
-    private void verifyTagSlugUniqueness(String slug) {
-        if(tagRepository.existsBySlug(slug)) {
+    private void checkExistsByLabel(String label) {
+        if(tagRepository.existsByLabel(label)) {
             throw new ResourceAlreadyExistsException(
-                    ErrorMessageUtil.exists(Tag.class, "slug", slug));
+                    ErrorMessageUtil.exists(Tag.class, "label", label));
         }
     }
 }

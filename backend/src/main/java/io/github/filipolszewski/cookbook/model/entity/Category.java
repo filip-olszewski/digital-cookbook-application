@@ -49,38 +49,4 @@ public class Category extends BaseEntity {
             orphanRemoval = true
     )
     private List<Category> subCategories = new ArrayList<>();
-
-    // BUSINESS METHODS
-    public void moveTo(Category parent) {
-        if (parentCategory != null && parentCategory != parent) {
-            parentCategory.getSubCategories().remove(this);
-        }
-
-        if(parent == null) {
-            parentCategory = null;
-            return;
-        }
-
-        if(getId().equals(parent.getId())) {
-            throw new ResourceConflictException("Category cannot be its own parent.");
-        }
-
-        if (isDescendantOf(parent)) {
-            throw new ResourceConflictException("Cannot move a category into its own sub-category.");
-        }
-
-        parentCategory = parent;
-        parent.getSubCategories().add(this);
-    }
-
-    public boolean isDescendantOf(Category potentialAncestor) {
-        Category current = this.getParentCategory();
-        while (current != null) {
-            if (current.getId().equals(potentialAncestor.getId())) {
-                return true;
-            }
-            current = current.getParentCategory();
-        }
-        return false;
-    }
 }

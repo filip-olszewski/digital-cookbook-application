@@ -182,9 +182,7 @@ class IngredientServiceTest {
         Long id = 1L;
         Ingredient ingredient = new Ingredient();
         ingredient.setId(id);
-
-        when(ingredientRepository.findById(id)).thenReturn(Optional.of(ingredient));
-        when(recipeRepository.existsByIngredientId(id)).thenReturn(true); // Or isIngredientUsed(id) depending on your rename
+        when(recipeRepository.existsByIngredientId(id)).thenReturn(true);
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> {
             ingredientService.deleteIngredient(id);
@@ -193,7 +191,6 @@ class IngredientServiceTest {
         assertEquals("Cannot delete ingredient which is being used in active recipes",
                 ex.getMessage());
 
-        verify(ingredientRepository).findById(eq(id));
         verify(recipeRepository).existsByIngredientId(eq(id));
         verify(ingredientRepository, never()).delete(any());
     }

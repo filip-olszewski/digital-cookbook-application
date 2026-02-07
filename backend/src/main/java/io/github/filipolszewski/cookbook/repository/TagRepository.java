@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TagRepository extends JpaRepository<Tag, Long> {
-    boolean existsBySlug(String slug);
+    boolean existsByLabel(String label);
 
     @Modifying
     @Query(value = "DELETE FROM recipe_tags WHERE tag_id = :tagId", nativeQuery = true)

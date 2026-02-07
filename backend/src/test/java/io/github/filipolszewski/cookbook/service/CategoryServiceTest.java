@@ -1,5 +1,6 @@
 package io.github.filipolszewski.cookbook.service;
 
+import com.github.slugify.Slugify;
 import io.github.filipolszewski.cookbook.dto.category.CategoryCreateRequest;
 import io.github.filipolszewski.cookbook.dto.category.CategoryDetailsResponse;
 import io.github.filipolszewski.cookbook.dto.category.CategorySummaryResponse;
@@ -13,17 +14,23 @@ import io.github.filipolszewski.cookbook.repository.CategoryRepository;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.specification.SpecificationBuilder;
 import io.github.filipolszewski.cookbook.specification.criteria.CategorySearchCriteria;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -41,6 +48,9 @@ class CategoryServiceTest {
 
     @Mock
     private RecipeRepository recipeRepository;
+
+    @Spy
+    private Slugify slugify = Slugify.builder().build();
 
     @InjectMocks
     private CategoryService categoryService;
@@ -79,38 +89,36 @@ class CategoryServiceTest {
     @Test
     void getCategory_WhenCategoryExists_ShouldReturnCategoryDetails() {
         String slug = "dinner";
-
         var entity = new Category();
         entity.setId(1L);
-        entity.setSlug("dinner");
+        entity.setSlug(slug);
 
-        var expected = new CategoryDetailsResponse(1L, "", "dinner", "", null);
+        var expected = new CategoryDetailsResponse(1L, "", slug, "", null);
 
-        when(categoryRepository.findBySlug(slug)).thenReturn(Optional.of(entity));
+        when(categoryRepository.findBySlugWithParent(slug)).thenReturn(Optional.of(entity));
         when(categoryMapper.toDetails(entity)).thenReturn(expected);
 
         CategoryDetailsResponse res = categoryService.getCategory(slug);
 
         assertNotNull(res);
         assertEquals(expected.slug(), res.slug());
-        assertEquals(expected.id(), res.id());
 
-        verify(categoryRepository).findBySlug(eq(slug));
+        verify(categoryRepository).findBySlugWithParent(eq(slug));
         verify(categoryMapper).toDetails(eq(entity));
     }
 
     @Test
     void getCategory_WhenCategoryNotFound_ShouldThrowResourceNotFoundException() {
         String slug = "slug";
-        when(categoryRepository.findBySlug(slug)).thenReturn(Optional.empty());
+
+        when(categoryRepository.findBySlugWithParent(slug)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> {
             categoryService.getCategory(slug);
         });
 
         assertEquals("Category with slug ['slug'] not found.", ex.getMessage());
-        verify(categoryRepository).findBySlug(slug);
-        verifyNoInteractions(categoryMapper);
+        verify(categoryRepository).findBySlugWithParent(slug);
     }
 
     @Test
@@ -123,8 +131,8 @@ class CategoryServiceTest {
         var request = new CategoryCreateRequest(name, null, parentId);
 
         var mappedCategory = new Category();
+        mappedCategory.setId(999L);
         mappedCategory.setName(name);
-        mappedCategory.setSlug(slug);
 
         var parentCategory = new Category();
         parentCategory.setId(parentId);
@@ -138,18 +146,16 @@ class CategoryServiceTest {
         var expected = new CategorySummaryResponse(categoryId, name, slug, parentId);
 
         when(categoryRepository.existsBySlug(slug)).thenReturn(false);
-        when(categoryMapper.toEntity(request, slug)).thenReturn(mappedCategory);
-        when(categoryRepository.findById(parentId)).thenReturn(Optional.of(parentCategory));
+        when(categoryMapper.toEntity(request)).thenReturn(mappedCategory);
+        when(categoryRepository.findByIdWithSubcategories(parentId)).thenReturn(Optional.of(parentCategory));
         when(categoryRepository.save(mappedCategory)).thenReturn(savedCategory);
         when(categoryMapper.toSummary(savedCategory)).thenReturn(expected);
 
         CategorySummaryResponse res = categoryService.createCategory(request);
 
         assertEquals(expected, res);
-        assertEquals(mappedCategory.getParentCategory(), parentCategory);
-
-        verify(categoryRepository).save(mappedCategory);
-        verify(categoryRepository).findById(parentId);
+        assertEquals(parentCategory, mappedCategory.getParentCategory());
+        verify(categoryRepository).save(eq(mappedCategory));
     }
 
     @Test
@@ -173,7 +179,7 @@ class CategoryServiceTest {
         var expected = new CategorySummaryResponse(categoryId, name, slug, null);
 
         when(categoryRepository.existsBySlug(slug)).thenReturn(false);
-        when(categoryMapper.toEntity(request, slug)).thenReturn(mappedCategory);
+        when(categoryMapper.toEntity(request)).thenReturn(mappedCategory);
         when(categoryRepository.save(mappedCategory)).thenReturn(savedCategory);
         when(categoryMapper.toSummary(savedCategory)).thenReturn(expected);
 
@@ -219,6 +225,8 @@ class CategoryServiceTest {
     void deleteCategory_WhenCategoryDoesNotExist_ShouldThrowResourceNotFoundException() {
         Long categoryId = 1L;
 
+        when(categoryRepository.existsByParentCategoryId(categoryId)).thenReturn(false);
+        when(recipeRepository.existsByCategoryId(categoryId)).thenReturn(false);
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> {
@@ -226,19 +234,12 @@ class CategoryServiceTest {
         });
 
         assertEquals("Category with id ['1'] not found.", ex.getMessage());
-
-        verify(categoryRepository, never()).existsByParentCategoryId(any());
-        verify(recipeRepository, never()).existsByCategoryId(any());
-        verify(categoryRepository, never()).delete(any(Category.class));
     }
 
     @Test
     void deleteCategory_WhenCategoryHasSubCategories_ShouldThrowResourceConflictException() {
         Long categoryId = 1L;
-        Category category = new Category();
-        category.setId(categoryId);
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
         when(categoryRepository.existsByParentCategoryId(categoryId)).thenReturn(true);
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> {
@@ -248,10 +249,8 @@ class CategoryServiceTest {
         assertEquals("Cannot delete category that has sub-categories or recipes assigned.",
                 ex.getMessage());
 
-        verify(categoryRepository).findById(eq(categoryId));
         verify(categoryRepository).existsByParentCategoryId(eq(categoryId));
-        verify(recipeRepository, never()).existsByCategoryId(any());
-        verify(categoryRepository, never()).delete(any(Category.class));
+        verify(categoryRepository, never()).findById(any());
     }
 
     @Test
@@ -260,7 +259,6 @@ class CategoryServiceTest {
         Category category = new Category();
         category.setId(categoryId);
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
         when(categoryRepository.existsByParentCategoryId(categoryId)).thenReturn(false);
         when(recipeRepository.existsByCategoryId(categoryId)).thenReturn(true);
 
@@ -271,9 +269,9 @@ class CategoryServiceTest {
         assertEquals("Cannot delete category that has sub-categories or recipes assigned.",
                 ex.getMessage());
 
-        verify(categoryRepository).findById(eq(categoryId));
         verify(categoryRepository).existsByParentCategoryId(eq(categoryId));
         verify(recipeRepository).existsByCategoryId(eq(categoryId));
+        verify(categoryRepository, never()).findById(eq(categoryId));
         verify(categoryRepository, never()).delete(any(Category.class));
     }
 
@@ -284,7 +282,7 @@ class CategoryServiceTest {
                 null, JsonNullable.undefined(), JsonNullable.undefined()
         );
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
+        when(categoryRepository.findByIdWithParent(categoryId)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> {
             categoryService.updateCategory(categoryId, request);
@@ -292,18 +290,15 @@ class CategoryServiceTest {
 
         assertEquals("Category with id ['1'] not found.", ex.getMessage());
 
-        verify(categoryRepository).findById(eq(categoryId));
-        verify(categoryMapper, never()).updateEntity(any(), any());
         verify(categoryRepository, never()).save(any());
     }
 
     @Test
-    void updateCategory_WhenNameChanged_ShouldUpdateNameAndSlug() {
+    void updateCategory_WhenNameChanged_ShouldUpdateName() {
         Long categoryId = 1L;
+        String newName = "dinner";
         String oldName = "supper";
         String oldSlug = "supper";
-        String newName = "dinner";
-        String newSlug = "dinner";
 
         var request = new CategoryUpdateRequest(
                 newName, JsonNullable.undefined(), JsonNullable.undefined()
@@ -317,14 +312,13 @@ class CategoryServiceTest {
         var savedCategory = new Category();
         savedCategory.setId(categoryId);
         savedCategory.setName(newName);
-        savedCategory.setSlug(newSlug);
+        savedCategory.setSlug(oldSlug);
 
         var expected = new CategoryDetailsResponse(
-            categoryId, newName, newSlug, null, null
+                categoryId, newName, oldSlug, null, null
         );
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(foundCategory));
-        when(categoryRepository.existsBySlug(newSlug)).thenReturn(false);
+        when(categoryRepository.findByIdWithParent(categoryId)).thenReturn(Optional.of(foundCategory));
         when(categoryRepository.save(foundCategory)).thenReturn(savedCategory);
         when(categoryMapper.toDetails(savedCategory)).thenReturn(expected);
 
@@ -332,36 +326,9 @@ class CategoryServiceTest {
 
         assertEquals(expected, res);
         assertEquals(newName, foundCategory.getName());
-        assertEquals(newSlug, foundCategory.getSlug());
+        assertEquals(oldSlug, foundCategory.getSlug());
 
         verify(categoryRepository).save(eq(foundCategory));
-        verify(categoryMapper).updateEntity(foundCategory, request);
-    }
-
-    @Test
-    void updateCategory_WhenSlugDuplicate_ShouldThrowResourceAlreadyExistsException() {
-        Long categoryId = 1L;
-        String duplicateName = "dinner";
-        String duplicateSlug = "dinner";
-
-        var request = new CategoryUpdateRequest(
-                duplicateName, JsonNullable.undefined(), JsonNullable.undefined()
-        );
-
-        var foundCategory = new Category();
-        foundCategory.setId(categoryId);
-        foundCategory.setName("meal");
-        foundCategory.setSlug("meal");
-
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(foundCategory));
-        when(categoryRepository.existsBySlug(duplicateSlug)).thenReturn(true);
-
-        ResourceAlreadyExistsException ex = assertThrows(ResourceAlreadyExistsException.class, () -> {
-            categoryService.updateCategory(categoryId, request);
-        });
-
-        assertEquals("Category with this slug ['dinner'] already exists.", ex.getMessage());
-        verify(categoryRepository, never()).save(any());
     }
 
     @Test
@@ -371,7 +338,7 @@ class CategoryServiceTest {
         Long newParentId = 3L;
 
         var request = new CategoryUpdateRequest(
-            null, JsonNullable.undefined(), JsonNullable.of(newParentId)
+                null, JsonNullable.undefined(), JsonNullable.of(newParentId)
         );
 
         var oldParentCategory = new Category();
@@ -385,8 +352,8 @@ class CategoryServiceTest {
         newParentCategory.setId(newParentId);
         newParentCategory.setParentCategory(foundCategory);
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(foundCategory));
-        when(categoryRepository.findById(newParentId)).thenReturn(Optional.of(newParentCategory));
+        when(categoryRepository.findByIdWithParent(categoryId)).thenReturn(Optional.of(foundCategory));
+        when(categoryRepository.findByIdWithSubcategories(newParentId)).thenReturn(Optional.of(newParentCategory));
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> {
             categoryService.updateCategory(categoryId, request);
@@ -407,7 +374,8 @@ class CategoryServiceTest {
         var foundCategory = new Category();
         foundCategory.setId(categoryId);
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(foundCategory));
+        when(categoryRepository.findByIdWithParent(categoryId)).thenReturn(Optional.of(foundCategory));
+        when(categoryRepository.findByIdWithSubcategories(categoryId)).thenReturn(Optional.of(foundCategory));
 
         ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> {
             categoryService.updateCategory(categoryId, request);
@@ -429,8 +397,8 @@ class CategoryServiceTest {
         var foundCategory = new Category();
         foundCategory.setId(categoryId);
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(foundCategory));
-        when(categoryRepository.findById(invalidParentId)).thenReturn(Optional.empty());
+        when(categoryRepository.findByIdWithParent(categoryId)).thenReturn(Optional.of(foundCategory));
+        when(categoryRepository.findByIdWithSubcategories(invalidParentId)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> {
             categoryService.updateCategory(categoryId, request);
@@ -445,7 +413,6 @@ class CategoryServiceTest {
         Long categoryId = 1L;
         Long newParentId = 2L;
         String newName = "dinner";
-        String newSlug = "dinner";
         String newImgUrl = "image";
 
         var request = new CategoryUpdateRequest(
@@ -460,35 +427,31 @@ class CategoryServiceTest {
         var newParent = new Category();
         newParent.setId(newParentId);
 
+        var savedCategory = new Category();
+        savedCategory.setId(categoryId);
+        savedCategory.setName(newName);
+        savedCategory.setSlug("meal");
+        savedCategory.setImgUrl(newImgUrl);
+        savedCategory.setParentCategory(newParent);
+
         var expected = new CategoryDetailsResponse(
-                categoryId, newName, newSlug, newImgUrl, new CategorySummaryResponse(
+                categoryId, newName, "meal", newImgUrl, new CategorySummaryResponse(
                 newParentId, "any", "any", null)
         );
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(foundCategory));
-        when(categoryRepository.existsBySlug(newSlug)).thenReturn(false);
-        when(categoryRepository.findById(newParentId)).thenReturn(Optional.of(newParent));
-        when(categoryRepository.save(foundCategory)).thenReturn(foundCategory);
+        when(categoryRepository.findByIdWithParent(categoryId)).thenReturn(Optional.of(foundCategory));
+        when(categoryRepository.findByIdWithSubcategories(newParentId)).thenReturn(Optional.of(newParent));
+        when(categoryRepository.save(foundCategory)).thenReturn(savedCategory);
         when(categoryMapper.toDetails(foundCategory)).thenReturn(expected);
-
-        doAnswer(invocation -> {
-            Category cat = invocation.getArgument(0);
-            CategoryUpdateRequest req = invocation.getArgument(1);
-            if(req.imgUrl().isPresent()) {
-                cat.setImgUrl(req.imgUrl().get());
-            }
-            return null;
-        }).when(categoryMapper).updateEntity(any(), any());
 
         CategoryDetailsResponse res = categoryService.updateCategory(categoryId, request);
 
         assertEquals(expected, res);
-        assertEquals(newName, foundCategory.getName());
-        assertEquals(newSlug, foundCategory.getSlug());
-        assertEquals(newParent, foundCategory.getParentCategory());
-        assertEquals(newImgUrl, foundCategory.getImgUrl());
+        assertEquals(newName, savedCategory.getName());
+        assertEquals("meal", savedCategory.getSlug());
+        assertEquals(newParent.getId(), savedCategory.getParentCategory().getId());
+        assertEquals(newImgUrl, savedCategory.getImgUrl());
 
         verify(categoryRepository).save(eq(foundCategory));
-        verify(categoryMapper).updateEntity(foundCategory, request);
     }
 }

@@ -7,12 +7,16 @@ import io.github.filipolszewski.cookbook.model.entity.Review;
 import io.github.filipolszewski.cookbook.model.entity.Step;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", uses = {UserMapper.class})
+@Mapper(
+    componentModel = "spring",
+    uses = {
+        UserMapper.class
+    },
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface ReviewMapper {
-    @Mapping(target = "user", ignore = true)
-    @Mapping(target = "recipe", ignore = true)
-    @Mapping(target = "id", ignore = true)
     Review toEntity(ReviewPostRequest request);
 
     @Mapping(target = "postedAt", source = "createdAt")

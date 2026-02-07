@@ -8,9 +8,11 @@ import io.github.filipolszewski.cookbook.model.entity.Category;
 import org.mapstruct.*;
 
 @Mapper(
-        componentModel = "spring",
-        uses = {JsonNullableMapper.class},
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+    componentModel = "spring",
+    uses = {
+        JsonNullableMapper.class
+    },
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface CategoryMapper {
     @Mapping(target = "parentId", source = "parentCategory.id")
@@ -19,12 +21,9 @@ public interface CategoryMapper {
     @Mapping(target = "parent", source = "parentCategory")
     CategoryDetailsResponse toDetails(Category category);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "parentCategory", ignore = true)
-    @Mapping(target = "subCategories", ignore = true)
     Category toEntity(CategoryCreateRequest request);
 
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "imgUrl", source = "imgUrl")
-    void updateBasicFields(@MappingTarget Category category, CategoryUpdateRequest request);
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "name", ignore = true)
+    void update(@MappingTarget Category category, CategoryUpdateRequest request);
 }

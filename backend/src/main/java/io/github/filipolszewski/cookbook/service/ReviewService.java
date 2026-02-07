@@ -15,12 +15,14 @@ import io.github.filipolszewski.cookbook.repository.UserRepository;
 import io.github.filipolszewski.cookbook.security.UserContext;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -35,27 +37,34 @@ public class ReviewService {
     private final UserContext userContext;
 
     public Page<ReviewResponse> getRecipeReviews(String slug, Pageable pageable) {
-        return reviewRepository.findAllReviewsByRecipeSlug(slug, pageable)
+        log.debug("Fetching reviews for recipe slug: {}", slug);
+        return reviewRepository.findAllReviewsByRecipeSlugWithUser(slug, pageable)
                 .map(reviewMapper::toResponse);
     }
 
     public Page<ReviewResponse> getUserReviews(String username, Pageable pageable) {
-        return reviewRepository.findAllReviewsByUserUsername(username, pageable)
+        log.debug("Fetching recipes for user: {}", username);
+        return reviewRepository.findAllReviewsByUserUsernameWithUser(username, pageable)
                 .map(reviewMapper::toResponse);
     }
 
     @Transactional
-    public ReviewResponse postReview(String slug, ReviewPostRequest request) {
-
-        Recipe recipe = recipeRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(Recipe.class, "slug", slug)));
-
+    public ReviewResponse postReview(String recipeSlug, ReviewPostRequest request) {
         Long currentUserId = userContext.getCurrentUserId();
-        User currentUser = userRepository.getReferenceById(currentUserId);
+
+        log.info("User [{}] is posting a review for recipe [{}]", currentUserId, recipeSlug);
+
+        Recipe recipe = recipeRepository.findBySlug(recipeSlug)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Recipe.class, "slug", recipeSlug)));
+
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(User.class, "id", currentUserId)));
 
         // User can only review a recipe once
         if(reviewRepository.existsByUserIdAndRecipeId(currentUserId, recipe.getId())) {
+            log.warn("Review failed: User [{}] already reviewed recipe [{}]", currentUserId, recipeSlug);
             throw new ResourceConflictException("User already reviewed this recipe!");
         }
 
@@ -64,82 +73,55 @@ public class ReviewService {
         review.setRecipe(recipe);
 
         Review saved = reviewRepository.save(review);
+        recipeRepository.addReviewRating(recipe.getId(), request.rating());
 
-        // Calculate new recipe rating
-        // Dirty checking saves recipe automatically
-        updateRecipeStatistics(recipe, request.rating());
+        log.info("Review created successfully with ID: [{}]", saved.getId());
 
         return reviewMapper.toResponse(saved);
     }
 
     @Transactional
     @PreAuthorize("@reviewSecurity.isAuthorOrAdmin(#id, authentication)")
-    public void deleteReview(String slug, Long id) {
-
-        // TODO: START FROM HERE
-        // Load recipe to memory to udpate the stats
-        // No need to load review to memory?
-
-        Review review = findReviewById(id);
-        validateReviewBelongsToRecipe(review, slug);
+    public void deleteReview(Long id) {
+        Review review = reviewRepository.findByIdWithRecipe(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Review.class, "id", id)));
 
         Recipe recipe = review.getRecipe();
 
+        recipeRepository.removeReviewRating(recipe.getId(), review.getRating());
         reviewRepository.delete(review);
-        reviewRepository.flush();
-
-        recalculateRecipeRating(recipe);
     }
 
     @Transactional
     @PreAuthorize("@reviewSecurity.isAuthor(#id, authentication)")
-    public ReviewResponse updateReview(String slug, Long id, ReviewUpdateRequest request) {
+    public ReviewResponse updateReview(Long id, ReviewUpdateRequest request) {
 
-        Review review = findReviewById(id);
-        validateReviewBelongsToRecipe(review, slug);
-
-        boolean ratingChanged = false;
+        Review review = reviewRepository.findByIdWithRecipeAndUser(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Review.class, "id", id)));
 
         if(request.rating() != null &&
           !request.rating().equals(review.getRating())) {
-            review.setRating(request.rating());
-            ratingChanged = true;
+
+            int oldRating = review.getRating();
+            int newRating = request.rating();
+
+            recipeRepository.updateReviewRating(
+                    review.getRecipe().getId(),
+                    oldRating,
+                    newRating
+            );
+            review.setRating(newRating);
         }
 
         if(request.comment() != null &&
           !request.comment().isBlank() &&
           !request.comment().equals(review.getComment())) {
+
             review.setComment(request.comment());
         }
 
-        Review saved = reviewRepository.saveAndFlush(review);
-
-        if(ratingChanged) {
-            recalculateRecipeRating(review.getRecipe());
-        }
-
-        return reviewMapper.toResponse(saved);
-    }
-
-
-    private void updateRecipeStatistics(Recipe recipe, int newRating) {
-        int oldCount = recipe.getReviewCount();
-        int newCount = oldCount + 1;
-        double oldAvg = recipe.getAverageRating();
-        double newAvg = ((oldAvg * oldCount) + newRating) / newCount;
-        recipe.setReviewCount(newCount);
-        recipe.setAverageRating(newAvg);
-    }
-
-    private Review findReviewById(Long id) {
-        return reviewRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(Review.class, "id", id)));
-    }
-
-    private void validateReviewBelongsToRecipe(Review review, String recipeSlug) {
-        if (!review.getRecipe().getSlug().equals(recipeSlug)) {
-            throw new ResourceNotFoundException("Review does not belong to the specified recipe.");
-        }
+        return reviewMapper.toResponse(review);
     }
 }

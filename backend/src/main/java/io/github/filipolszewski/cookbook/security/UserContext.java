@@ -13,17 +13,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserContext {
 
-    private final UserRepository userRepository;
-
-    /*
-    public User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(User.class, "email", email)));
-    }
-    */
-
     private CustomUserPrincipal getPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

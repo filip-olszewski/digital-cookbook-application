@@ -4,6 +4,5 @@ import jakarta.validation.constraints.NotNull;
 
 public record TagResponse(
     @NotNull Long id,
-    @NotNull String label,
-    @NotNull String slug
+    @NotNull String label
 ) {}

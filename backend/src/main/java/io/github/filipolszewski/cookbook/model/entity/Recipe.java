@@ -79,7 +79,7 @@ public class Recipe extends BaseEntity {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private List<RecipeIngredient> recipeIngredients = new ArrayList<>();
+    private Set<RecipeIngredient> recipeIngredients = new HashSet<>();
 
     @OneToMany(
             mappedBy = "recipe",
@@ -105,23 +105,16 @@ public class Recipe extends BaseEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    // BUSINESS METHODS
-    public void updateStatistics(Double averageRating, Integer reviewCount) {
-        this.averageRating = averageRating == null ? 0.0 : averageRating;
-        this.reviewCount = reviewCount == null ? 0 : reviewCount;
-    }
-
-    // AGGREGATE ROOT HELPER METHODS
-    public void addRecipeIngredient(RecipeIngredient newIngredient) {
+    // HELPER METHODS
+    public void addIngredient(RecipeIngredient newIngredient) {
         newIngredient.setRecipe(this);
         recipeIngredients.add(newIngredient);
     }
 
-    public void replaceRecipeIngredients(List<RecipeIngredient> newIngredients) {
+    public void replaceIngredients(List<RecipeIngredient> newIngredients) {
         recipeIngredients.clear();
-
         if (newIngredients != null) {
-            newIngredients.forEach(this::addRecipeIngredient);
+            newIngredients.forEach(this::addIngredient);
         }
     }
 

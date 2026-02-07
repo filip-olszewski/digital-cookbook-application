@@ -32,6 +32,8 @@ public class CategorySpecificationBuilder implements SpecificationBuilder<Catego
         Specification<Category> spec = (root, query, cb) ->
             cb.conjunction();
 
+        if(criteria == null) return spec;
+
         if(criteria.name() != null && !criteria.name().isBlank()) {
             spec = spec.and(hasName(criteria.name()));
         }
