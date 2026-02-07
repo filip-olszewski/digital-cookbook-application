@@ -2,7 +2,10 @@ package io.github.filipolszewski.cookbook.service;
 
 import io.github.filipolszewski.cookbook.dto.review.ReviewPostRequest;
 import io.github.filipolszewski.cookbook.dto.review.ReviewResponse;
+import io.github.filipolszewski.cookbook.dto.review.ReviewUpdateRequest;
 import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
+import io.github.filipolszewski.cookbook.exception.ResourceConflictException;
+import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.ReviewMapper;
 import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.model.entity.Review;
@@ -25,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -183,6 +187,7 @@ class ReviewServiceTest {
             userId, "user123", "fullName"
         ));
 
+        when(userContext.getCurrentUserId()).thenReturn(userId);
         when(recipeRepository.findBySlug(recipeSlug)).thenReturn(Optional.of(recipe));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(reviewRepository.existsByUserIdAndRecipeId(userId, recipeId)).thenReturn(false);
@@ -193,6 +198,181 @@ class ReviewServiceTest {
 
         var res = reviewService.postReview(recipeSlug, request);
 
+        assertThat(res).isEqualTo(expected);
+        verify(recipeRepository).addReviewRating(recipeId, reviewRating);
+        verify(reviewRepository).save(eq(review));
+    }
 
+    @Test
+    void postReview_WhenRecipeNotFound_ShouldThrowResourceNotFoundException() {
+        String slug = "unknown-recipe";
+        Long userId = 1L;
+        var request = new ReviewPostRequest(5, "Great!");
+
+        when(userContext.getCurrentUserId()).thenReturn(userId);
+        when(recipeRepository.findBySlug(slug)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reviewService.postReview(slug, request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Recipe")
+                .hasMessageContaining(slug);
+
+        verify(userRepository, never()).findById(anyLong());
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void postReview_WhenUserNotFound_ShouldThrowResourceNotFoundException() {
+        String slug = "chocolate-cake";
+        Long userId = 99L;
+        var request = new ReviewPostRequest(5, "Great!");
+
+        Recipe recipe = new Recipe();
+        recipe.setId(1L);
+
+        when(userContext.getCurrentUserId()).thenReturn(userId);
+        when(recipeRepository.findBySlug(slug)).thenReturn(Optional.of(recipe));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reviewService.postReview(slug, request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User")
+                .hasMessageContaining(String.valueOf(userId));
+
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void postReview_WhenUserAlreadyReviewed_ShouldThrowResourceConflictException() {
+        String recipeSlug = "recipe";
+        Long userId = 1L;
+        Long recipeId = 1L;
+
+        var request = new ReviewPostRequest(5, "comment");
+
+        Recipe recipe = new Recipe();
+        recipe.setId(recipeId);
+
+        User user = new User();
+        user.setId(userId);
+
+        when(userContext.getCurrentUserId()).thenReturn(userId);
+        when(recipeRepository.findBySlug(recipeSlug)).thenReturn(Optional.of(recipe));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(reviewRepository.existsByUserIdAndRecipeId(userId, recipeId)).thenReturn(true);
+
+        assertThatThrownBy(() -> reviewService.postReview(recipeSlug, request))
+                .isInstanceOf(ResourceConflictException.class)
+                .hasMessage("User already reviewed this recipe!");
+
+        verify(reviewRepository, never()).save(any());
+        verify(recipeRepository, never()).addReviewRating(anyLong(), anyInt());
+    }
+
+    @Test
+    void deleteReview_WhenReviewExists_ShouldDeleteReviewAndRemoveRating() {
+        Long reviewId = 1L;
+        Long recipeId = 1L;
+        int rating = 5;
+
+        Recipe recipe = new Recipe();
+        recipe.setId(recipeId);
+
+        Review review = new Review();
+        review.setId(reviewId);
+        review.setRating(rating);
+        review.setRecipe(recipe);
+
+        when(reviewRepository.findByIdWithRecipe(reviewId)).thenReturn(Optional.of(review));
+
+        reviewService.deleteReview(reviewId);
+
+        verify(reviewRepository).delete(eq(review));
+        verify(recipeRepository).removeReviewRating(eq(recipeId), eq(rating));
+    }
+
+    @Test
+    void deleteReview_WhenReviewNotFound_ShouldThrowResourceNotFoundException() {
+        Long reviewId = 1L;
+
+        when(reviewRepository.findByIdWithRecipe(reviewId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reviewService.deleteReview(reviewId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Review")
+                .hasMessageContaining(String.valueOf(reviewId));
+
+        verify(recipeRepository, never()).removeReviewRating(anyLong(), anyInt());
+        verify(reviewRepository, never()).delete(any());
+    }
+
+    @Test
+    void updateReview_WhenRatingChanged_ShouldUpdateRecipeStats() {
+        Long reviewId = 1L;
+        Long recipeId = 100L;
+        int oldRating = 3;
+        int newRating = 5;
+
+        Recipe recipe = new Recipe();
+        recipe.setId(recipeId);
+
+        Review existingReview = new Review();
+        existingReview.setId(reviewId);
+        existingReview.setRating(oldRating);
+        existingReview.setComment("Old comment");
+        existingReview.setRecipe(recipe);
+
+        ReviewUpdateRequest request = new ReviewUpdateRequest(newRating, "Old comment");
+
+        ReviewResponse expectedResponse = new ReviewResponse(
+                reviewId, newRating, "Old comment", Instant.now(), null
+        );
+
+        when(reviewRepository.findByIdWithRecipeAndUser(reviewId))
+                .thenReturn(Optional.of(existingReview));
+
+        when(reviewMapper.toResponse(any())).thenReturn(expectedResponse);
+
+        reviewService.updateReview(reviewId, request);
+
+        verify(recipeRepository).updateReviewRating(recipeId, oldRating, newRating);
+        assertThat(existingReview.getRating()).isEqualTo(newRating);
+    }
+
+    @Test
+    void updateReview_WhenOnlyCommentChanged_ShouldNotUpdateStats() {
+        Long reviewId = 1L;
+        int rating = 5;
+
+        Review existingReview = new Review();
+        existingReview.setId(reviewId);
+        existingReview.setRating(rating);
+        existingReview.setComment("Old text");
+        existingReview.setRecipe(new Recipe());
+
+        ReviewUpdateRequest request = new ReviewUpdateRequest(rating, "New updated text");
+
+        when(reviewRepository.findByIdWithRecipeAndUser(reviewId))
+                .thenReturn(Optional.of(existingReview));
+
+        reviewService.updateReview(reviewId, request);
+
+        assertThat(existingReview.getComment()).isEqualTo("New updated text");
+        verify(recipeRepository, never()).updateReviewRating(anyLong(), anyInt(), anyInt());
+    }
+
+    @Test
+    void updateReview_WhenReviewNotFound_ShouldThrowException() {
+        Long reviewId = 99L;
+        ReviewUpdateRequest request = new ReviewUpdateRequest(5, "comment");
+
+        when(reviewRepository.findByIdWithRecipeAndUser(reviewId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reviewService.updateReview(reviewId, request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Review");
+
+        verifyNoInteractions(recipeRepository);
     }
 }

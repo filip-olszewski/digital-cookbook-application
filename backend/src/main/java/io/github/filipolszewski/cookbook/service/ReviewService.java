@@ -14,6 +14,7 @@ import io.github.filipolszewski.cookbook.repository.ReviewRepository;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
 import io.github.filipolszewski.cookbook.security.UserContext;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
+import io.github.filipolszewski.cookbook.util.UpdateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -101,8 +102,7 @@ public class ReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessageUtil.notFound(Review.class, "id", id)));
 
-        if(request.rating() != null &&
-          !request.rating().equals(review.getRating())) {
+        if(UpdateUtil.isChanged(request.rating(), review.getRating())) {
 
             int oldRating = review.getRating();
             int newRating = request.rating();
@@ -115,10 +115,7 @@ public class ReviewService {
             review.setRating(newRating);
         }
 
-        if(request.comment() != null &&
-          !request.comment().isBlank() &&
-          !request.comment().equals(review.getComment())) {
-
+        if(UpdateUtil.isChanged(request.comment(), review.getComment())) {
             review.setComment(request.comment());
         }
 
