@@ -3,24 +3,30 @@ package io.github.filipolszewski.cookbook.service;
 import io.github.filipolszewski.cookbook.config.properties.JwtProperties;
 import io.github.filipolszewski.cookbook.dto.auth.AuthResponse;
 import io.github.filipolszewski.cookbook.dto.auth.LoginRequest;
+import io.github.filipolszewski.cookbook.dto.auth.TokenRefreshRequest;
 import io.github.filipolszewski.cookbook.dto.auth.SignupRequest;
 import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
 import io.github.filipolszewski.cookbook.exception.ResourceAlreadyExistsException;
+import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.UserMapper;
+import io.github.filipolszewski.cookbook.model.entity.RefreshToken;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
-import io.github.filipolszewski.cookbook.security.TokenService;
+import io.github.filipolszewski.cookbook.security.service.RefreshTokenService;
+import io.github.filipolszewski.cookbook.security.service.TokenService;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -32,18 +38,27 @@ public class AuthService {
     private final UserMapper userMapper;
 
     private final TokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
+
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
-
     private final JwtProperties jwtProperties;
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         Authentication auth = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
 
-        String token = tokenService.generateToken(auth);
-        return new AuthResponse(token, "Bearer", jwtProperties.expirationSeconds());
+        String accessToken = tokenService.generateToken(auth);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(auth.getName());
+
+        return new AuthResponse(
+            accessToken,
+            refreshToken.getToken(),
+            "Bearer",
+            jwtProperties.expirationSeconds()
+        );
     }
 
     @Transactional
@@ -68,6 +83,33 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
 
         return userMapper.toSummary(userRepository.save(user));
+    }
+
+    @Transactional
+    public AuthResponse refreshToken(TokenRefreshRequest request) {
+        RefreshToken token = refreshTokenService.findByToken(request.token());
+        refreshTokenService.verifyExpiration(token);
+        User user = token.getUser();
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+            user.getEmail(), null, List.of(new SimpleGrantedAuthority(user.getRole().name()))
+        );
+
+        String accessToken = tokenService.generateToken(auth);
+        return new AuthResponse(
+                accessToken,
+                request.token(),
+                "Bearer",
+                jwtProperties.expirationSeconds()
+        );
+    }
+
+    @Transactional
+    public void logout(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        refreshTokenService.deleteByUserId(user.getId());
     }
 
 }

@@ -1,32 +1,24 @@
 spring:
   application:
     name: digital-cookbook-api
-
-  # 1. Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/cookbookdb
     username: postgres
     password: root
-
-  # 2. Flyway Configuration (Must be aligned with 'datasource')
   flyway:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1
     locations: classpath:db/migration
-
-  # 3. JPA/Hibernate Configuration
   jpa:
     hibernate:
-      ddl-auto: validate  # Checks DB schema matches Java entities
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         naming:
           physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     show-sql: true
-    # This setting is tricky. For Flyway + Validate, usually set to 'false' 
-    # so Flyway runs immediately before Hibernate starts.
     defer-datasource-initialization: false
 
   sql:
@@ -45,6 +37,7 @@ rsa:
 
 jwt:
   expiration-seconds: 3600
+  refresh-expiration-seconds: 604800 # One week
 
 app:
   cors:
