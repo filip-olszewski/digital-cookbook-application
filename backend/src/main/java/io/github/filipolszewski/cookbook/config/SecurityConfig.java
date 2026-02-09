@@ -87,7 +87,7 @@ public class SecurityConfig {
                         ApiConstants.API_V1 + "/categories/**"
                 ).hasAuthority("ADMIN")
 
-                // Authenticated users actions
+                // Authenticated user actions
                 .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/recipes").authenticated()
                 .requestMatchers(HttpMethod.PATCH, ApiConstants.API_V1 + "/recipes/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/recipes/**").authenticated()
@@ -95,6 +95,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/recipes/*/reviews").authenticated()
                 .requestMatchers(HttpMethod.PATCH, ApiConstants.API_V1 + "/recipes/*/reviews/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/recipes/*/reviews/**").authenticated()
+
+                .requestMatchers(HttpMethod.POST, ApiConstants.API_V1 + "/recipes/*/favourite").authenticated()
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.API_V1 + "/recipes/*/favourite").authenticated()
 
                 .anyRequest().authenticated()
             )

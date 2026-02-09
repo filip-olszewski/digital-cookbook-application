@@ -72,6 +72,15 @@ public class Recipe extends BaseEntity {
     @Column(nullable = false)
     private Integer reviewCount = 0;
 
+    /**
+     * Cached review count for performance optimization.
+     * Denormalized to enable efficient sorting and filtering.
+     * Updates are handled by {@link io.github.filipolszewski.cookbook.service.FavouriteService}.
+     */
+    @NotNull
+    @Column(nullable = false)
+    private Integer favouriteCount = 0;
+
     // RELATIONS
     @OneToMany(
             mappedBy = "recipe",
@@ -134,6 +143,16 @@ public class Recipe extends BaseEntity {
         tags.clear();
         if (newTags != null) {
             tags.addAll(newTags);
+        }
+    }
+
+    public void addFavouriteCount() {
+        favouriteCount += 1;
+    }
+
+    public void removeFavouriteCount() {
+        if(favouriteCount > 0) {
+            favouriteCount -= 1;
         }
     }
 }

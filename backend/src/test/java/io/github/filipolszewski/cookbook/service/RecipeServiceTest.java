@@ -371,7 +371,7 @@ class RecipeServiceTest {
 
     private RecipeSummaryResponse createSummaryResponse(Long id) {
         return new RecipeSummaryResponse(
-                id, "Pancakes", "slug", 15, "url", 0.0, 0, "Author", "Category", List.of()
+                id, "Pancakes", "slug", 15, "url", 0.0, 0, 0,"Author", "Category", List.of()
         );
     }
 }

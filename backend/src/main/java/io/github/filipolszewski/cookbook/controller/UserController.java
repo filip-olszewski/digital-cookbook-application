@@ -22,6 +22,6 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserPrivateProfileResponse> getMyProfile() {
-        return null;
+        return ResponseEntity.ok(userService.getMyProfile());
     }
 }

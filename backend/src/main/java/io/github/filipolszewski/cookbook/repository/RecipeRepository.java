@@ -16,9 +16,14 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
         JpaSpecificationExecutor<Recipe> {
 
     boolean existsBySlug(String slug);
+    boolean existsByCategoryId(Long categoryId);
+    boolean existsByIdAndAuthorId(Long id, Long authorId);
     long countBySlugStartingWith(String prefix);
+    long countByAuthorId(Long authorId);
 
-    @Override
+    @Query("SELECT COUNT(*) FROM Recipe r WHERE r.author.username = :username")
+    long countByAuthorUsername(String username);
+
     @EntityGraph(attributePaths = {"tags", "author", "category"})
     Page<Recipe> findAll(Specification<Recipe> specification, Pageable pageable);
 
@@ -28,17 +33,11 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
     })
     Optional<Recipe> findBySlug(String slug);
 
-    boolean existsByCategoryId(Long categoryId);
-    boolean existsByIdAndAuthorEmail(Long id, String email);
-
     @Query("""
         SELECT COUNT(*) > 0 FROM Recipe r 
         JOIN r.recipeIngredients ri WHERE ri.ingredient.id = :ingredientId
     """)
     boolean existsByIngredientId(Long ingredientId);
-
-    @Query("SELECT COUNT(*) FROM Recipe r WHERE r.author.username = :username")
-    Integer countByAuthorUsername(String username);
 
     @Modifying(flushAutomatically = true)
     @Query("""
@@ -69,4 +68,14 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
             WHERE r.id = :id
             """)
     void updateReviewRating(Long id, int oldRating, int newRating);
+
+    @Query("""
+        SELECT r 
+        FROM Favourite f 
+        JOIN f.recipe r 
+        WHERE f.user.id = :userId 
+        ORDER BY f.likeDate DESC
+    """)
+    @EntityGraph(attributePaths = {"tags", "author", "category"})
+    Page<Recipe> findFavouriteRecipesByUserId(Long userId, Pageable pageable);
 }

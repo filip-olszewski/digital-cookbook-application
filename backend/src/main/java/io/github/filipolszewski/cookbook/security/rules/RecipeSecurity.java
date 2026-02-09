@@ -1,6 +1,7 @@
 package io.github.filipolszewski.cookbook.security.rules;
 
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
+import io.github.filipolszewski.cookbook.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -17,14 +18,14 @@ public class RecipeSecurity {
         );
 
         if(isAdmin) return true;
-
-        /* Performance update for the future:
-        Eliminate additional join on the recipe call by using userId within the claims */
         return isAuthor(recipeId, authentication);
     }
 
     public boolean isAuthor(Long recipeId, Authentication authentication) {
-        return recipeRepository.existsByIdAndAuthorEmail(recipeId, authentication.getName());
+        if(authentication.getPrincipal() instanceof CustomUserPrincipal p) {
+            return recipeRepository.existsByIdAndAuthorId(recipeId, p.getId());
+        }
+        return false;
     }
 
 }

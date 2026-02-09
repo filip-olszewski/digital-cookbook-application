@@ -2,6 +2,7 @@ package io.github.filipolszewski.cookbook.security.rules;
 
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.repository.ReviewRepository;
+import io.github.filipolszewski.cookbook.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -18,14 +19,14 @@ public class ReviewSecurity {
         );
 
         if(isAdmin) return true;
-
-        /* Performance update for the future:
-        Eliminate additional join on the recipe call by using userId within the claims */
         return isAuthor(reviewId, authentication);
     }
 
     public boolean isAuthor(Long reviewId, Authentication authentication) {
-        return reviewRepository.existsByIdAndUserEmail(reviewId, authentication.getName());
+        if(authentication.getPrincipal() instanceof CustomUserPrincipal p) {
+            return reviewRepository.existsByIdAndUserId(reviewId, p.getId());
+        }
+        return false;
     }
 
 }

@@ -2,12 +2,12 @@ package io.github.filipolszewski.cookbook.mapper;
 
 import io.github.filipolszewski.cookbook.annotation.IgnoreAuditFields;
 import io.github.filipolszewski.cookbook.dto.auth.SignupRequest;
+import io.github.filipolszewski.cookbook.dto.user.UserPrivateProfileResponse;
 import io.github.filipolszewski.cookbook.dto.user.UserPublicProfileResponse;
 import io.github.filipolszewski.cookbook.dto.user.UserSummaryResponse;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.ReportingPolicy;
 
 @Mapper(config = CentralMapperConfig.class)
 public interface UserMapper {
@@ -20,11 +20,14 @@ public interface UserMapper {
     @Mapping(target = "avatarUrl", ignore = true)
     User toEntity(SignupRequest request);
 
-    @Mapping(target = "fullName", source = "name.fullName")
+    @Mapping(target = "fullName", source = "user.name.fullName")
     UserSummaryResponse toSummary(User user);
 
     @Mapping(target = "fullName", source = "user.name.fullName")
     @Mapping(target = "joinedAt", source = "user.createdAt")
-    @Mapping(target = "recipeCount", source = "recipeCount")
-    UserPublicProfileResponse toPublicDetails(User user, int recipeCount);
+    UserPublicProfileResponse toPublicProfile(User user, long recipeCount);
+
+    @Mapping(target = "fullName", source = "user.name.fullName")
+    @Mapping(target = "joinedAt", source = "user.createdAt")
+    UserPrivateProfileResponse toPrivateProfile(User user, long recipeCount, long reviewCount, long favouriteCount);
 }

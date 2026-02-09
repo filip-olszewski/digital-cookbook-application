@@ -27,7 +27,6 @@ public interface RecipeMapper {
 
     @Mapping(target = "ingredients", source = "recipeIngredients")
     @Mapping(target = "rating", source = "averageRating")
-    @Mapping(target = "favouriteCount", ignore = true)
     RecipeDetailsResponse toDetails(Recipe recipe);
 
     @Mapping(target = "authorName", source = "author.name.fullName", defaultValue = "Unknown")
@@ -41,6 +40,7 @@ public interface RecipeMapper {
     @Mapping(target = "publicationDate", ignore = true)
     @Mapping(target = "averageRating", ignore = true)
     @Mapping(target = "reviewCount", ignore = true)
+    @Mapping(target = "favouriteCount", ignore = true)
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "author", ignore = true)
@@ -54,6 +54,7 @@ public interface RecipeMapper {
     @Mapping(target = "publicationDate", ignore = true)
     @Mapping(target = "averageRating", ignore = true)
     @Mapping(target = "reviewCount", ignore = true)
+    @Mapping(target = "favouriteCount", ignore = true)
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "author", ignore = true)

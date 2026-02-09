@@ -14,6 +14,7 @@ public record RecipeSummaryResponse(
     @Nullable String imgUrl,
     @NotNull Double rating,
     @NotNull Integer reviewCount,
+    @NotNull Integer favouriteCount,
     @NotNull String authorName,
     @NotNull String category,
     @NotNull List<String> tags

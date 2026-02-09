@@ -13,7 +13,8 @@ import java.util.Optional;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     boolean existsByUserIdAndRecipeId(Long userId, Long recipeId);
-    boolean existsByIdAndUserEmail(Long id, String email);
+    boolean existsByIdAndUserId(Long id, Long userId);
+    long countByUserId(Long userId);
 
     @EntityGraph(attributePaths = {"recipe"})
     @Query("SELECT r FROM Review r WHERE r.id = :id")
