@@ -3,6 +3,7 @@ package io.github.filipolszewski.cookbook.service;
 import io.github.filipolszewski.cookbook.dto.recipe.RecipeCreateRequest;
 import io.github.filipolszewski.cookbook.dto.recipe.RecipeDetailsResponse;
 import io.github.filipolszewski.cookbook.dto.recipe.RecipeSummaryResponse;
+import io.github.filipolszewski.cookbook.dto.recipe.RecipeUpdateRequest;
 import io.github.filipolszewski.cookbook.dto.recipeingredient.RecipeIngredientAddRequest;
 import io.github.filipolszewski.cookbook.dto.step.StepAppendRequest;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -237,6 +239,122 @@ class RecipeServiceTest {
         verifyNoInteractions(categoryService, tagService);
     }
 
+    @Test
+    void deleteRecipe_WhenRecipeExists_ShouldDelete() {
+        Long recipeId = 1L;
+
+        Recipe recipe = new Recipe();
+        recipe.setId(recipeId);
+
+        when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(recipe));
+
+        recipeService.deleteRecipe(recipeId);
+
+        verify(recipeRepository).findById(recipeId);
+        verify(recipeRepository).delete(recipe);
+    }
+
+    @Test
+    void deleteRecipe_WhenRecipeNotFound_ShouldThrowException() {
+        Long recipeId = 999L;
+
+        when(recipeRepository.findById(recipeId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> recipeService.deleteRecipe(recipeId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Recipe")
+                .hasMessageContaining(String.valueOf(recipeId));
+
+        verify(recipeRepository, never()).delete(any(Recipe.class));
+    }
+
+    @Test
+    void updateRecipe_WhenAllFieldsProvided_ShouldUpdateEverything() {
+        Long recipeId = 1L;
+        Long newCategoryId = 55L;
+        List<Long> newTagIds = List.of(99L);
+
+        Recipe existingRecipe = new Recipe();
+        existingRecipe.setId(recipeId);
+        existingRecipe.setName("Old Name");
+
+        List<RecipeIngredientAddRequest> newIngredientsReq = List.of(
+                new RecipeIngredientAddRequest(1L, 500.0, "g")
+        );
+        List<StepAppendRequest> newStepsReq = List.of(
+                new StepAppendRequest(1, "New Step", null)
+        );
+
+        RecipeUpdateRequest request = new RecipeUpdateRequest(
+                "New Name",
+                "New Desc",
+                30,
+                4,
+                JsonNullable.of("http://new-image.url"),
+                newCategoryId,
+                newTagIds,
+                newIngredientsReq,
+                newStepsReq
+        );
+
+        Category newCategory = new Category(); newCategory.setId(newCategoryId);
+        Set<Tag> newTags = Set.of(new Tag());
+        List<RecipeIngredient> newIngredients = List.of(new RecipeIngredient());
+        Step newStep = new Step();
+        RecipeDetailsResponse expectedResponse = Instancio.create(RecipeDetailsResponse.class);
+
+        when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(existingRecipe));
+        when(categoryService.findCategoryById(newCategoryId)).thenReturn(newCategory);
+        when(tagService.findTagsByIds(newTagIds)).thenReturn(newTags);
+        when(recipeIngredientService.assembleIngredients(newIngredientsReq)).thenReturn(newIngredients);
+        when(stepMapper.toEntity(any(StepAppendRequest.class))).thenReturn(newStep);
+        when(recipeRepository.save(existingRecipe)).thenReturn(existingRecipe);
+        when(recipeMapper.toDetails(existingRecipe)).thenReturn(expectedResponse);
+
+        RecipeDetailsResponse actual = recipeService.updateRecipe(recipeId, request);
+
+        assertThat(actual).isEqualTo(expectedResponse);
+
+        verify(recipeMapper).update(existingRecipe, request);
+        verify(categoryService).findCategoryById(newCategoryId);
+        verify(tagService).findTagsByIds(newTagIds);
+        verify(recipeIngredientService).assembleIngredients(newIngredientsReq);
+        verify(stepMapper, times(1)).toEntity(any(StepAppendRequest.class));
+        verify(recipeRepository).save(existingRecipe);
+    }
+
+    @Test
+    void updateRecipe_WhenOnlySimpleFieldsProvided_ShouldSkipComplexLookups() {
+        Long recipeId = 1L;
+        Recipe existingRecipe = new Recipe();
+        existingRecipe.setId(recipeId);
+
+        RecipeUpdateRequest request = new RecipeUpdateRequest(
+                "New Name",
+                null,
+                null,
+                null,
+                JsonNullable.undefined(),
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(existingRecipe));
+        when(recipeRepository.save(existingRecipe)).thenReturn(existingRecipe);
+        when(recipeMapper.toDetails(existingRecipe)).thenReturn(mock(RecipeDetailsResponse.class));
+
+        recipeService.updateRecipe(recipeId, request);
+
+        verify(recipeMapper).update(existingRecipe, request);
+        verifyNoInteractions(categoryService);
+        verifyNoInteractions(tagService);
+        verifyNoInteractions(recipeIngredientService);
+        verifyNoInteractions(stepMapper);
+        verify(recipeRepository).save(existingRecipe);
+    }
+
     private RecipeCreateRequest createValidRequest(Long categoryId, List<Long> tagIds) {
         return new RecipeCreateRequest(
                 "Pancakes",
@@ -246,8 +364,8 @@ class RecipeServiceTest {
                 "http://img.url",
                 categoryId,
                 tagIds,
-                List.of(new RecipeIngredientAddRequest(1L, 100.0, "g")), // Ingredients
-                List.of(new StepAppendRequest(1, "Mix", null)) // Steps
+                List.of(new RecipeIngredientAddRequest(1L, 100.0, "g")),
+                List.of(new StepAppendRequest(1, "Mix", null))
         );
     }
 

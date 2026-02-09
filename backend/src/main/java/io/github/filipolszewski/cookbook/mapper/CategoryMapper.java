@@ -14,7 +14,7 @@ import org.mapstruct.*;
         JsonNullableMapper.class
     }
 )
-public interface CategoryMapper extends CentralMapperConfig {
+public interface CategoryMapper {
     @Mapping(target = "parentId", source = "parentCategory.id")
     CategorySummaryResponse toSummary(Category category);
 

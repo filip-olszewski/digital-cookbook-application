@@ -8,7 +8,7 @@ import io.github.filipolszewski.cookbook.model.entity.Ingredient;
 import org.mapstruct.*;
 
 @Mapper(config = CentralMapperConfig.class)
-public interface IngredientMapper extends CentralMapperConfig {
+public interface IngredientMapper {
 
     @IgnoreAuditFields
     Ingredient toEntity(IngredientCreateRequest request);
