@@ -22,14 +22,13 @@ public class RecipeSpecificationBuilder implements SpecificationBuilder<Recipe, 
     }
 
     private Specification<Recipe> hasAuthor(String author) {
-        return (root, query, cb) -> {
-            return cb.equal(root.get("author").get("username"), author);
-        };
+        return (root, query, cb) ->
+            cb.equal(root.get("author").get("username"), author);
     }
 
     private Specification<Recipe> hasPrepTime(Integer maxPrepTime) {
         return (root, query, cb) ->
-                cb.lessThanOrEqualTo(root.get("prepTime"), maxPrepTime);
+            cb.lessThanOrEqualTo(root.get("prepTime"), maxPrepTime);
     }
 
     private Specification<Recipe> hasRating(Double minRating) {

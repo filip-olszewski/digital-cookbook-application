@@ -65,10 +65,6 @@ public class IngredientService {
             ingredient.setName(newName);
         }
 
-        if(request.type() != null) {
-            ingredient.setType(request.type());
-        }
-
         Ingredient saved = ingredientRepository.save(ingredient);
         return ingredientMapper.toSummary(saved);
     }

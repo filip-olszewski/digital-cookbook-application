@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -319,19 +320,21 @@ class ReviewServiceTest {
         Review existingReview = new Review();
         existingReview.setId(reviewId);
         existingReview.setRating(oldRating);
-        existingReview.setComment("Old comment");
         existingReview.setRecipe(recipe);
 
-        ReviewUpdateRequest request = new ReviewUpdateRequest(newRating, "Old comment");
+        ReviewUpdateRequest request = new ReviewUpdateRequest(newRating, null);
 
-        ReviewResponse expectedResponse = new ReviewResponse(
-                reviewId, newRating, "Old comment", Instant.now(), null
-        );
+        doAnswer(invocation -> {
+            Review reviewArg = invocation.getArgument(0);
+            ReviewUpdateRequest reqArg = invocation.getArgument(1);
+            reviewArg.setRating(reqArg.rating());
+            return null;
+        }).when(reviewMapper).update(any(Review.class), any(ReviewUpdateRequest.class));
 
         when(reviewRepository.findByIdWithRecipeAndUser(reviewId))
                 .thenReturn(Optional.of(existingReview));
 
-        when(reviewMapper.toResponse(any())).thenReturn(expectedResponse);
+        when(reviewMapper.toResponse(any())).thenReturn(mock(ReviewResponse.class));
 
         reviewService.updateReview(reviewId, request);
 
@@ -350,7 +353,16 @@ class ReviewServiceTest {
         existingReview.setComment("Old text");
         existingReview.setRecipe(new Recipe());
 
-        ReviewUpdateRequest request = new ReviewUpdateRequest(rating, "New updated text");
+        ReviewUpdateRequest request = new ReviewUpdateRequest(
+                rating,
+                JsonNullable.of("New updated text")
+        );
+
+        doAnswer(invocation -> {
+            Review reviewArg = invocation.getArgument(0);
+            reviewArg.setComment("New updated text");
+            return null;
+        }).when(reviewMapper).update(any(Review.class), any(ReviewUpdateRequest.class));
 
         when(reviewRepository.findByIdWithRecipeAndUser(reviewId))
                 .thenReturn(Optional.of(existingReview));
@@ -364,7 +376,7 @@ class ReviewServiceTest {
     @Test
     void updateReview_WhenReviewNotFound_ShouldThrowException() {
         Long reviewId = 99L;
-        ReviewUpdateRequest request = new ReviewUpdateRequest(5, "comment");
+        ReviewUpdateRequest request = new ReviewUpdateRequest(5, null);
 
         when(reviewRepository.findByIdWithRecipeAndUser(reviewId))
                 .thenReturn(Optional.empty());

@@ -2,6 +2,7 @@ package io.github.filipolszewski.cookbook.dto.recipe;
 
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 
 import java.util.List;
 

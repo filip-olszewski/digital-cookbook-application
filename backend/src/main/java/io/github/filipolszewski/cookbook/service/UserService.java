@@ -9,6 +9,7 @@ import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
+import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,5 +30,11 @@ public class UserService {
                     new ResourceNotFoundException("Could not find a user with username: " + username));
         int authoredRecipeCount = recipeRepository.countByAuthorUsername(username);
         return userMapper.toPublicDetails(user, authoredRecipeCount);
+    }
+
+    public User findUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(User.class, "id", id)));
     }
 }

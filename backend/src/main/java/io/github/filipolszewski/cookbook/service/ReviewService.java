@@ -102,23 +102,13 @@ public class ReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessageUtil.notFound(Review.class, "id", id)));
 
-        if(UpdateUtil.isChanged(request.rating(), review.getRating())) {
+        int oldRating = review.getRating();
+        reviewMapper.update(review, request);
 
-            int oldRating = review.getRating();
-            int newRating = request.rating();
-
-            recipeRepository.updateReviewRating(
-                    review.getRecipe().getId(),
-                    oldRating,
-                    newRating
-            );
-            review.setRating(newRating);
+        if(oldRating != review.getRating()) {
+            recipeRepository.updateReviewRating(review.getRecipe().getId(), oldRating, review.getRating());
         }
 
-        if(UpdateUtil.isChanged(request.comment(), review.getComment())) {
-            review.setComment(request.comment());
-        }
-
-        return reviewMapper.toResponse(review);
+        return reviewMapper.toResponse(reviewRepository.save(review));
     }
 }

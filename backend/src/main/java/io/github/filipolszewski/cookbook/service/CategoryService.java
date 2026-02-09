@@ -10,6 +10,7 @@ import io.github.filipolszewski.cookbook.exception.ResourceConflictException;
 import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.mapper.CategoryMapper;
 import io.github.filipolszewski.cookbook.model.entity.Category;
+import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.repository.CategoryRepository;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.specification.SpecificationBuilder;
@@ -97,37 +98,35 @@ public class CategoryService {
         // Update basic fields if provided
         categoryMapper.update(category, request);
 
-        // Update name if changed and not blank (slug stays the same - for compatibility)
-        if (UpdateUtil.isChanged(request.name(), category.getName())) {
-            category.setName(request.name());
-        }
-
         if (request.parentId().isPresent()) {
-            Long newParentId = request.parentId().get();
-            Long currentParentId = (category.getParentCategory() != null)
-                    ? category.getParentCategory().getId()
-                    : null;
-
-            // Is the new parent same as the old parent?
-            if (!Objects.equals(newParentId, currentParentId)) {
-
-                // If explicitly null, set it to null (make it a root category)
-                if (newParentId == null) {
-                    category.setParentCategory(null);
-                }
-                // Fetch parent category along with its subcategories and move current category into the new parent
-                else {
-                    Category parent = findCategoryByIdWithSubcategories(newParentId);
-                    moveCategory(category, parent);
-                }
-            }
+            handleParentCategoryUpdate(category, request.parentId().get());
         }
 
         Category savedCategory = categoryRepository.save(category);
         return categoryMapper.toDetails(savedCategory);
     }
 
-    public void moveCategory(Category category, Category newParent) {
+    private void handleParentCategoryUpdate(Category category, Long newParentId) {
+        Long currentParentId = (category.getParentCategory() != null)
+                ? category.getParentCategory().getId()
+                : null;
+
+        // Is the new parent same as the old parent?
+        if (!Objects.equals(newParentId, currentParentId)) {
+
+            // If explicitly null, set it to null (make it a root category)
+            if (newParentId == null) {
+                category.setParentCategory(null);
+            }
+            // Fetch parent category along with its subcategories and move current category into the new parent
+            else {
+                Category parent = findCategoryByIdWithSubcategories(newParentId);
+                moveCategory(category, parent);
+            }
+        }
+    }
+
+    private void moveCategory(Category category, Category newParent) {
         if(category.getId().equals(newParent.getId())) {
             throw new ResourceConflictException("Category cannot be its own parent.");
         }
@@ -148,7 +147,7 @@ public class CategoryService {
      * @param newParent     The new parent category we try to set on the target category.
      * @return              Whether the move results in a cycle.
      */
-    public boolean isCycle(Category target, Category newParent) {
+    private boolean isCycle(Category target, Category newParent) {
         Category current = newParent;
         while (current != null) {
             if (current.getId().equals(target.getId())) {
@@ -157,6 +156,12 @@ public class CategoryService {
             current = current.getParentCategory();
         }
         return false;
+    }
+
+    public Category findCategoryById(Long id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Category.class, "id", id)));
     }
 
     private Category findCategoryByIdWithSubcategories(Long id) {

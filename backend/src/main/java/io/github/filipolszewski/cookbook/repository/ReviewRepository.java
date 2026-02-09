@@ -1,8 +1,6 @@
 package io.github.filipolszewski.cookbook.repository;
 
-import io.github.filipolszewski.cookbook.model.entity.Recipe;
 import io.github.filipolszewski.cookbook.model.entity.Review;
-import io.github.filipolszewski.cookbook.model.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,8 +12,6 @@ import java.util.Optional;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    Page<Review> findAllReviewsByRecipeSlug(String slug, Pageable pageable);
-    Page<Review> findAllReviewsByUserUsername(String username, Pageable pageable);
     boolean existsByUserIdAndRecipeId(Long userId, Long recipeId);
     boolean existsByIdAndUserEmail(Long id, String email);
 

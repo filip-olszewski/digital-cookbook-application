@@ -16,7 +16,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 // TODO: Adjust Caches
 
@@ -64,6 +66,17 @@ public class TagService {
         }
 
         return tagMapper.toResponse(tagRepository.save(tag));
+    }
+
+    public Set<Tag> findTagsByIds(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) return Set.of();
+
+        List<Tag> tags = tagRepository.findAllById(tagIds);
+        if (tags.size() != tagIds.size()) {
+            throw new ResourceNotFoundException("One or more tags not found");
+        }
+
+        return new HashSet<>(tags);
     }
 
     private Tag findTagById(Long id) {

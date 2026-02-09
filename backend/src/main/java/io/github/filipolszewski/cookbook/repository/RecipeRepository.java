@@ -15,6 +15,9 @@ import java.util.Optional;
 public interface RecipeRepository extends JpaRepository<Recipe, Long>,
         JpaSpecificationExecutor<Recipe> {
 
+    boolean existsBySlug(String slug);
+    long countBySlugStartingWith(String prefix);
+
     @Override
     @EntityGraph(attributePaths = {"tags", "author", "category"})
     Page<Recipe> findAll(Specification<Recipe> specification, Pageable pageable);
@@ -36,9 +39,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>,
 
     @Query("SELECT COUNT(*) FROM Recipe r WHERE r.author.username = :username")
     Integer countByAuthorUsername(String username);
-
-    @Query("SELECT r.slug FROM Recipe r WHERE r.slug LIKE :slug%")
-    List<String> findSlugsStartingWith(String slug);
 
     @Modifying(flushAutomatically = true)
     @Query("""

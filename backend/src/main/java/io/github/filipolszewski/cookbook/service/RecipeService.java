@@ -42,16 +42,16 @@ public class RecipeService {
     private final RecipeMapper recipeMapper;
     private final SpecificationBuilder<Recipe, RecipeSearchCriteria> specificationBuilder;
 
-    private final UserRepository userRepository;
-    private final CategoryRepository categoryRepository;
-    private final TagRepository tagRepository;
-    private final IngredientRepository ingredientRepository;
-
-    private final RecipeIngredientMapper recipeIngredientMapper;
     private final StepMapper stepMapper;
 
+    private final UserService userService;
+    private final CategoryService categoryService;
+    private final TagService tagService;
+    private final RecipeIngredientService recipeIngredientService;
+    private final RecipeSlugService slugService;
+
     private final UserContext userContext;
-    private final Slugify slugify;
+
 
     public Page<RecipeSummaryResponse> getRecipes(RecipeSearchCriteria criteria, Pageable pageable) {
         return recipeRepository.findAll(specificationBuilder.build(criteria), pageable)
@@ -69,15 +69,19 @@ public class RecipeService {
     public RecipeSummaryResponse createRecipe(RecipeCreateRequest request) {
 
         Recipe recipe = recipeMapper.toEntity(request);
-        //recipe.setAuthor(getCurrentUser(userContext.getCurrentUserId()));
-        recipe.setAuthor(getCurrentUser(1L));
-        recipe.setPublicationDate(LocalDate.now());
-        recipe.setSlug(generateUniqueSlug(request.name()));
 
-        recipe.setCategory(findCategory(request.categoryId()));
-        recipe.replaceTags(findTags(request.tagIds()));
-        recipe.replaceIngredients(mapRecipeIngredients(request.recipeIngredients(), recipe));
-        recipe.replaceSteps(mapSteps(request.steps(), recipe));
+        User currentUser = userService.findUserById(userContext.getCurrentUserId());
+        recipe.setAuthor(currentUser);
+
+        String slug = slugService.generate(request.name());
+        recipe.setSlug(slug);
+
+        updateCategory(recipe, request.categoryId());
+        updateTags(recipe, request.tagIds());
+        updateIngredients(recipe, request.recipeIngredients());
+        updateSteps(recipe, request.steps());
+
+        recipe.setPublicationDate(LocalDate.now());
 
         return recipeMapper.toSummary(recipeRepository.save(recipe));
     }
@@ -86,7 +90,6 @@ public class RecipeService {
     @PreAuthorize("@recipeSecurity.isAuthorOrAdmin(#id, authentication)")
     public void deleteRecipe(Long id) {
         Recipe recipe = findRecipeById(id);
-
         recipeRepository.delete(recipe);
     }
 
@@ -95,65 +98,14 @@ public class RecipeService {
     public RecipeDetailsResponse updateRecipe(Long id, RecipeUpdateRequest request) {
         Recipe recipe = findRecipeById(id);
 
-        recipeMapper.updateBasicFields(recipe, request);
+        recipeMapper.update(recipe, request);
 
-        if(request.name() != null &&
-          !request.name().isBlank() &&
-          !request.name().equals(recipe.getName())) {
+        updateCategory(recipe, request.categoryId());
+        updateTags(recipe, request.tagIds());
+        updateIngredients(recipe, request.recipeIngredients());
+        updateSteps(recipe, request.steps());
 
-            recipe.setName(request.name());
-
-            String newSlug = slugify.slugify(request.name());
-
-            if (!recipe.getSlug().equals(newSlug)) {
-                recipe.setSlug(generateUniqueSlug(request.name()));
-            }
-        }
-
-        if(request.categoryId() != null) {
-            recipe.setCategory(findCategory(request.categoryId()));
-        }
-
-        if(request.tagIds() != null) {
-            recipe.replaceTags(findTags(request.tagIds()));
-        }
-
-        if(request.recipeIngredients() != null) {
-            recipe.replaceIngredients(mapRecipeIngredients(request.recipeIngredients(), recipe));
-        }
-
-        if(request.steps() != null) {
-            recipe.replaceSteps(mapSteps(request.steps(), recipe));
-        }
-
-        Recipe saved = recipeRepository.save(recipe);
-        return recipeMapper.toDetails(saved);
-    }
-
-
-    private String generateUniqueSlug(String name) {
-        String slug = slugify.slugify(name);
-        List<String> takenSlugs = recipeRepository.findSlugsStartingWith(slug);
-
-        if (!takenSlugs.contains(slug)) {
-            return slug;
-        }
-
-        int counter = 1;
-        String candidate = slug + "-" + counter;
-
-        while (takenSlugs.contains(candidate)) {
-            counter++;
-            candidate = slug + "-" + counter;
-        }
-
-        return candidate;
-    }
-
-    private User getCurrentUser(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(User.class, "id", id)));
+        return recipeMapper.toDetails(recipeRepository.save(recipe));
     }
 
     private Recipe findRecipeById(Long id) {
@@ -162,55 +114,37 @@ public class RecipeService {
                         ErrorMessageUtil.notFound(Recipe.class, "id", id)));
     }
 
-    private Category findCategory(Long id) {
-        return categoryRepository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException(
-                        ErrorMessageUtil.notFound(Category.class, "id", id)));
-    }
-
-    private Set<Tag> findTags(List<Long> tagIds) {
-        if (tagIds == null || tagIds.isEmpty()) return Set.of();
-
-        List<Tag> tags = tagRepository.findAllById(tagIds);
-        if (tags.size() != tagIds.size()) {
-            throw new ResourceNotFoundException("One or more tags not found");
+    private void updateCategory(Recipe recipe, Long categoryId) {
+        if (categoryId != null) {
+            Category category = categoryService.findCategoryById(categoryId);
+            recipe.setCategory(category);
         }
-
-        return new HashSet<>(tags);
     }
 
-    private List<RecipeIngredient> mapRecipeIngredients(
-            List<RecipeIngredientAddRequest> requests,
-            Recipe recipe
-    ) {
-
-        Set<Long> ingredientIds = requests.stream().map(RecipeIngredientAddRequest::ingredientId)
-                .collect(Collectors.toSet());
-
-        Map<Long, Ingredient> ingredientMap = ingredientRepository.findAllById(ingredientIds)
-                .stream()
-                .collect(Collectors.toMap(BaseEntity::getId, i -> i));
-
-        if (ingredientMap.size() != ingredientIds.size()) {
-            throw new ResourceNotFoundException("One or more ingredients not found");
+    private void updateTags(Recipe recipe, List<Long> tagIds) {
+        if (tagIds != null) {
+            Set<Tag> tags = tagService.findTagsByIds(tagIds);
+            recipe.replaceTags(tags);
         }
-
-        return requests.stream()
-                .map(req -> {
-                    RecipeIngredient r = recipeIngredientMapper.toEntity(req);
-                    r.setIngredient(ingredientMap.get(req.ingredientId()));
-                    return r;
-                })
-                .toList();
     }
 
-    private List<Step> mapSteps(List<StepAppendRequest> requests, Recipe recipe) {
-        return requests.stream()
-                .map(req -> {
-                    Step step = stepMapper.toEntity(req);
-                    step.setRecipe(recipe);
-                    return step;
-                })
-                .toList();
+    private void updateIngredients(Recipe recipe, List<RecipeIngredientAddRequest> requests) {
+        if (requests != null) {
+            List<RecipeIngredient> ingredients = recipeIngredientService.assembleIngredients(requests);
+            recipe.replaceIngredients(ingredients);
+        }
+    }
+
+    private void updateSteps(Recipe recipe, List<StepAppendRequest> requests) {
+        if (requests != null) {
+            List<Step> newSteps = requests.stream()
+                    .map(req -> {
+                        Step step = stepMapper.toEntity(req);
+                        step.setRecipe(recipe);
+                        return step;
+                    })
+                    .toList();
+            recipe.replaceSteps(newSteps);
+        }
     }
 }

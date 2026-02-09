@@ -1,5 +1,6 @@
 package io.github.filipolszewski.cookbook.mapper;
 
+import io.github.filipolszewski.cookbook.annotation.IgnoreAuditFields;
 import io.github.filipolszewski.cookbook.dto.category.CategoryDetailsResponse;
 import io.github.filipolszewski.cookbook.dto.category.CategorySummaryResponse;
 import io.github.filipolszewski.cookbook.dto.tag.TagCreateRequest;
@@ -9,11 +10,11 @@ import io.github.filipolszewski.cookbook.model.entity.Category;
 import io.github.filipolszewski.cookbook.model.entity.Tag;
 import org.mapstruct.*;
 
-@Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE
-)
+@Mapper(config = CentralMapperConfig.class)
 public interface TagMapper {
-    TagResponse toResponse(Tag tag);
+
+    @IgnoreAuditFields
     Tag toEntity(TagCreateRequest request);
+
+    TagResponse toResponse(Tag tag);
 }

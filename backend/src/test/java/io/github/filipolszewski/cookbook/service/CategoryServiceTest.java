@@ -325,8 +325,8 @@ class CategoryServiceTest {
         CategoryDetailsResponse res = categoryService.updateCategory(categoryId, request);
 
         assertEquals(expected, res);
-        assertEquals(newName, foundCategory.getName());
-        assertEquals(oldSlug, foundCategory.getSlug());
+        assertEquals(newName, savedCategory.getName());
+        assertEquals(oldSlug, savedCategory.getSlug());
 
         verify(categoryRepository).save(eq(foundCategory));
     }
