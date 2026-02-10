@@ -6,6 +6,7 @@ import io.github.filipolszewski.cookbook.dto.tag.TagResponse;
 import io.github.filipolszewski.cookbook.dto.tag.TagUpdateRequest;
 import io.github.filipolszewski.cookbook.repository.TagRepository;
 import io.github.filipolszewski.cookbook.service.TagService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class TagController {
     }
 
     @PostMapping
-    public ResponseEntity<TagResponse> addTag(@RequestBody TagCreateRequest request) {
+    public ResponseEntity<TagResponse> addTag(@RequestBody @Valid TagCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(tagService.addTag(request));
     }
 
@@ -39,7 +40,7 @@ public class TagController {
     @PatchMapping("/{id}")
     public ResponseEntity<TagResponse> updateTag(
             @PathVariable Long id,
-            @RequestBody TagUpdateRequest request
+            @RequestBody @Valid TagUpdateRequest request
     ) {
         return ResponseEntity.ok(tagService.updateTag(id, request));
     }

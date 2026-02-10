@@ -64,6 +64,10 @@ public class SecurityConfig {
                         ApiConstants.API_V1 + "/recipes/**"
                 ).permitAll()
 
+                // Actuator
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/actuator/metrics").hasAuthority("ADMIN")
+
                 // Only authenticated user can see their own profile
                 .requestMatchers(ApiConstants.API_V1 + "/users/me").authenticated()
                 .requestMatchers(HttpMethod.GET, ApiConstants.API_V1 + "/users/**").permitAll()
