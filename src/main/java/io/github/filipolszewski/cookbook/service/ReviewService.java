@@ -44,7 +44,7 @@ public class ReviewService {
     }
 
     public Page<ReviewResponse> getUserReviews(String username, Pageable pageable) {
-        log.debug("Fetching recipes for user: {}", username);
+        log.debug("Fetching reviews for user: {}", username);
         return reviewRepository.findAllReviewsByUserUsernameWithUser(username, pageable)
                 .map(reviewMapper::toResponse);
     }
@@ -84,6 +84,8 @@ public class ReviewService {
     @Transactional
     @PreAuthorize("@reviewSecurity.isAuthorOrAdmin(#id, authentication)")
     public void deleteReview(Long id) {
+        log.info("Processing deletion for review ID: {}", id);
+
         Review review = reviewRepository.findByIdWithRecipe(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessageUtil.notFound(Review.class, "id", id)));
@@ -92,11 +94,14 @@ public class ReviewService {
 
         recipeRepository.removeReviewRating(recipe.getId(), review.getRating());
         reviewRepository.delete(review);
+
+        log.info("Successfully deleted review ID: {}", id);
     }
 
     @Transactional
     @PreAuthorize("@reviewSecurity.isAuthor(#id, authentication)")
     public ReviewResponse updateReview(Long id, ReviewUpdateRequest request) {
+        log.info("Processing update for review ID: {}", id);
 
         Review review = reviewRepository.findByIdWithRecipeAndUser(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -107,8 +112,12 @@ public class ReviewService {
 
         if(oldRating != review.getRating()) {
             recipeRepository.updateReviewRating(review.getRecipe().getId(), oldRating, review.getRating());
+            log.info("Review ID: {} rating changed from {} to {}", id, oldRating, review.getRating());
         }
 
-        return reviewMapper.toResponse(reviewRepository.save(review));
+        Review updated = reviewRepository.save(review);
+        log.info("Successfully updated review ID: {}", id);
+
+        return reviewMapper.toResponse(updated);
     }
 }

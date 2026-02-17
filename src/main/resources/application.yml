@@ -60,3 +60,10 @@ management:
   endpoint:
     health:
       show-details: always
+
+logging:
+  level:
+    root: info
+    io.github.filipolszewski.cookbook: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

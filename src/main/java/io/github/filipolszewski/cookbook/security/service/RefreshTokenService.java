@@ -10,12 +10,14 @@ import io.github.filipolszewski.cookbook.repository.UserRepository;
 import io.github.filipolszewski.cookbook.security.UserContext;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,6 +29,8 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken createRefreshToken(String email) {
+        log.debug("Generating new refresh token for user email: {}", email);
+
         User user = userRepository.findByEmail(email).orElseThrow(() ->
                 new ResourceNotFoundException(ErrorMessageUtil.notFound(User.class, "email", email))
         );
@@ -38,24 +42,37 @@ public class RefreshTokenService {
         token.setToken(UUID.randomUUID().toString());
         token.setExpiryDate(Instant.now().plusSeconds(jwtProperties.refreshExpirationSeconds()));
 
-        return refreshTokenRepository.save(token);
+        RefreshToken saved = refreshTokenRepository.save(token);
+        log.debug("Successfully generated and saved refresh token for user ID: {}", user.getId());
+
+        return saved;
     }
 
     public RefreshToken findByToken(String token) {
+        log.debug("Attempting to find refresh token in database");
         return refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new AccessDeniedException("Refresh token is not in database!"));
     }
 
     public void verifyExpiration(RefreshToken token) {
+        log.debug("Verifying expiration for refresh token belonging to user ID: {}", token.getUser().getId());
+
         if (token.getExpiryDate().isBefore(Instant.now())) {
+            log.warn("Refresh token for user ID: {} has expired. Deleting token.", token.getUser().getId());
             refreshTokenRepository.delete(token);
             throw new AccessDeniedException("Refresh token was expired. Please make a new signin request");
         }
+
+        log.debug("Refresh token is valid");
     }
 
     @Transactional
     public void deleteByUserId(Long userId) {
-        userRepository.findById(userId).ifPresent(u -> refreshTokenRepository.deleteByUserId(userId));
+        log.info("Deleting all refresh tokens for user ID: {}", userId);
+        userRepository.findById(userId).ifPresent(u -> {
+            refreshTokenRepository.deleteByUserId(userId);
+            log.debug("Successfully deleted refresh tokens for user ID: {}", userId);
+        });
     }
 
 }

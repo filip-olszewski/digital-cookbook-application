@@ -11,6 +11,7 @@ import io.github.filipolszewski.cookbook.repository.TagRepository;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import io.github.filipolszewski.cookbook.util.UpdateUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-// TODO: Adjust Caches
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -30,39 +30,44 @@ public class TagService {
     private final TagRepository tagRepository;
     private final TagMapper tagMapper;
 
-    @Cacheable("tags")
     public List<TagResponse> getTags() {
         return tagRepository.findAll().stream()
                 .map(tagMapper::toResponse)
                 .toList();
     }
 
-    @CacheEvict(value = "tags", allEntries = true)
     @Transactional
     public TagResponse addTag(TagCreateRequest request) {
         String newLabel = request.label();
+        log.info("Creating new tag with label: {}", newLabel);
 
         checkExistsByLabel(newLabel);
 
         Tag tag = tagMapper.toEntity(request);
-        return tagMapper.toResponse(tagRepository.save(tag));
+        Tag saved = tagRepository.save(tag);
+
+        log.info("Successfully created tag with ID: {}", saved.getId());
+        return tagMapper.toResponse(saved);
     }
 
-    @CacheEvict(value = "tags", allEntries = true)
     @Transactional
     public void deleteTag(Long id) {
+        log.info("Deleting tag with ID: {}", id);
         tagRepository.detachTagFromAllRecipes(id);
         tagRepository.delete(findTagById(id));
+        log.info("Successfully deleted tag with ID: {}", id);
     }
 
     @Transactional
     public TagResponse updateTag(Long id, TagUpdateRequest request) {
+        log.info("Updating tag with ID: {}", id);
         Tag tag = findTagById(id);
         String newLabel = request.label();
 
         if(UpdateUtil.isChanged(newLabel, tag.getLabel())) {
             checkExistsByLabel(newLabel);
             tag.setLabel(newLabel);
+            log.info("Tag ID: {} label updated to: {}", id, newLabel);
         }
 
         return tagMapper.toResponse(tagRepository.save(tag));

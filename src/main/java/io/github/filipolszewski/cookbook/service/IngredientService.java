@@ -1,6 +1,6 @@
 package io.github.filipolszewski.cookbook.service;
 
-import  io.github.filipolszewski.cookbook.dto.ingredient.IngredientCreateRequest;
+import io.github.filipolszewski.cookbook.dto.ingredient.IngredientCreateRequest;
 import io.github.filipolszewski.cookbook.dto.ingredient.IngredientSummaryResponse;
 import io.github.filipolszewski.cookbook.dto.ingredient.IngredientUpdateRequest;
 import io.github.filipolszewski.cookbook.exception.ResourceAlreadyExistsException;
@@ -13,11 +13,13 @@ import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import io.github.filipolszewski.cookbook.util.UpdateUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -29,6 +31,7 @@ public class IngredientService {
     private final RecipeRepository recipeRepository;
 
     public Page<IngredientSummaryResponse> getIngredients(Pageable pageable, String name) {
+        log.debug("Fetching ingredients with search name: [{}]", name);
         if(name != null && !name.isBlank()) {
             return ingredientRepository.findByNameContainingIgnoreCase(name, pageable)
                     .map(ingredientMapper::toSummary);
@@ -39,23 +42,31 @@ public class IngredientService {
 
     @Transactional
     public IngredientSummaryResponse addIngredient(IngredientCreateRequest request) {
+        log.info("Attempting to add new ingredient with name: [{}]", request.name());
         checkExistsByName(request.name());
+
         Ingredient saved = ingredientRepository.save(ingredientMapper.toEntity(request));
+        log.info("Successfully added ingredient with ID: [{}]", saved.getId());
+
         return ingredientMapper.toSummary(saved);
     }
 
     @Transactional
     public void deleteIngredient(Long id) {
+        log.info("Attempting to delete ingredient with ID: [{}]", id);
+
         if(recipeRepository.existsByIngredientId(id)) {
             throw new ResourceConflictException(
                     "Cannot delete ingredient which is being used in active recipes");
         }
 
         ingredientRepository.delete(findIngredientById(id));
+        log.info("Successfully deleted ingredient with ID: [{}]", id);
     }
 
     @Transactional
     public IngredientSummaryResponse updateIngredient(Long id, IngredientUpdateRequest request) {
+        log.info("Attempting to update ingredient with ID: [{}]", id);
         Ingredient ingredient = findIngredientById(id);
 
         String newName = request.name();
@@ -63,6 +74,7 @@ public class IngredientService {
         if(UpdateUtil.isChanged(newName, ingredient.getName())) {
             checkExistsByName(newName);
             ingredient.setName(newName);
+            log.info("Ingredient ID: [{}] name updated to: [{}]", id, newName);
         }
 
         Ingredient saved = ingredientRepository.save(ingredient);

@@ -81,16 +81,26 @@ class RefreshTokenServiceTest {
 
     @Test
     void verifyExpiration_WhenTokenNotExpired_ShouldDoNothing() {
+        User user = new User();
+        user.setId(1L);
+
         RefreshToken token = new RefreshToken();
+        token.setUser(user);
         token.setExpiryDate(Instant.now().plusSeconds(3600));
 
         refreshTokenService.verifyExpiration(token);
+
         verify(refreshTokenRepository, never()).delete(any());
     }
 
+
     @Test
     void verifyExpiration_WhenTokenExpired_ShouldDeleteAndThrowException() {
+        User user = new User();
+        user.setId(1L);
+
         RefreshToken token = new RefreshToken();
+        token.setUser(user);
         token.setExpiryDate(Instant.now().minusSeconds(3600));
 
         assertThatThrownBy(() -> refreshTokenService.verifyExpiration(token))
@@ -99,6 +109,7 @@ class RefreshTokenServiceTest {
 
         verify(refreshTokenRepository).delete(token);
     }
+
 
     @Test
     void deleteByUserId_WhenUserExists_ShouldDeleteTokens() {

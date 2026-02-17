@@ -8,6 +8,7 @@ import io.github.filipolszewski.cookbook.model.entity.Ingredient;
 import io.github.filipolszewski.cookbook.model.entity.RecipeIngredient;
 import io.github.filipolszewski.cookbook.repository.IngredientRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecipeIngredientService {
@@ -23,7 +25,12 @@ public class RecipeIngredientService {
     private final RecipeIngredientMapper recipeIngredientMapper;
 
     public List<RecipeIngredient> assembleIngredients(List<RecipeIngredientAddRequest> requests) {
-        if (requests == null || requests.isEmpty()) return List.of();
+        if (requests == null || requests.isEmpty()) {
+            log.debug("No recipe ingredients to assemble.");
+            return List.of();
+        }
+
+        log.debug("Assembling [{}] recipe ingredients", requests.size());
 
         Set<Long> ids = requests.stream()
                 .map(RecipeIngredientAddRequest::ingredientId)
@@ -36,12 +43,15 @@ public class RecipeIngredientService {
             throw new ResourceNotFoundException("One or more ingredients not found");
         }
 
-        return requests.stream()
+        List<RecipeIngredient> assembled = requests.stream()
                 .map(req -> {
                     RecipeIngredient ri = recipeIngredientMapper.toEntity(req);
                     ri.setIngredient(ingredients.get(req.ingredientId()));
                     return ri;
                 })
                 .toList();
+
+        log.debug("Successfully assembled [{}] recipe ingredients", assembled.size());
+        return assembled;
     }
 }

@@ -19,6 +19,7 @@ import io.github.filipolszewski.cookbook.specification.SpecificationBuilder;
 import io.github.filipolszewski.cookbook.specification.criteria.RecipeSearchCriteria;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -52,21 +54,23 @@ public class RecipeService {
 
     private final UserContext userContext;
 
-
     public Page<RecipeSummaryResponse> getRecipes(RecipeSearchCriteria criteria, Pageable pageable) {
+        log.debug("Fetching recipes based on search criteria");
         return recipeRepository.findAll(specificationBuilder.build(criteria), pageable)
                 .map(recipeMapper::toSummary);
     }
 
     public RecipeDetailsResponse getRecipe(String slug) {
+        log.debug("Fetching recipe details for slug: {}", slug);
         return recipeRepository.findBySlug(slug)
-            .map(recipeMapper::toDetails)
-            .orElseThrow(() -> new ResourceNotFoundException(
-                    ErrorMessageUtil.notFound(Recipe.class, "slug", slug)));
+                .map(recipeMapper::toDetails)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessageUtil.notFound(Recipe.class, "slug", slug)));
     }
 
     @Transactional
     public RecipeSummaryResponse createRecipe(RecipeCreateRequest request) {
+        log.info("Attempting to create a new recipe");
 
         Recipe recipe = recipeMapper.toEntity(request);
 
@@ -83,19 +87,26 @@ public class RecipeService {
 
         recipe.setPublicationDate(LocalDate.now());
 
-        return recipeMapper.toSummary(recipeRepository.save(recipe));
+        Recipe saved = recipeRepository.save(recipe);
+        log.info("Successfully created recipe with ID: [{}] and slug: [{}] for User ID: [{}]",
+                saved.getId(), saved.getSlug(), currentUser.getId());
+
+        return recipeMapper.toSummary(saved);
     }
 
     @Transactional
     @PreAuthorize("@recipeSecurity.isAuthorOrAdmin(#id, authentication)")
     public void deleteRecipe(Long id) {
+        log.info("Attempting to delete recipe with ID: {}", id);
         Recipe recipe = findRecipeById(id);
         recipeRepository.delete(recipe);
+        log.info("Successfully deleted recipe with ID: {}", id);
     }
 
     @Transactional
     @PreAuthorize("@recipeSecurity.isAuthor(#id, authentication)")
     public RecipeDetailsResponse updateRecipe(Long id, RecipeUpdateRequest request) {
+        log.info("Attempting to update recipe with ID: {}", id);
         Recipe recipe = findRecipeById(id);
 
         recipeMapper.update(recipe, request);
@@ -105,7 +116,10 @@ public class RecipeService {
         updateIngredients(recipe, request.recipeIngredients());
         updateSteps(recipe, request.steps());
 
-        return recipeMapper.toDetails(recipeRepository.save(recipe));
+        Recipe saved = recipeRepository.save(recipe);
+        log.info("Successfully updated recipe with ID: {}", saved.getId());
+
+        return recipeMapper.toDetails(saved);
     }
 
     private Recipe findRecipeById(Long id) {
@@ -116,6 +130,7 @@ public class RecipeService {
 
     private void updateCategory(Recipe recipe, Long categoryId) {
         if (categoryId != null) {
+            log.debug("Updating category to ID: {} for recipe", categoryId);
             Category category = categoryService.findCategoryById(categoryId);
             recipe.setCategory(category);
         }
@@ -123,6 +138,7 @@ public class RecipeService {
 
     private void updateTags(Recipe recipe, List<Long> tagIds) {
         if (tagIds != null) {
+            log.debug("Updating tags for recipe with [{}] tag IDs", tagIds.size());
             Set<Tag> tags = tagService.findTagsByIds(tagIds);
             recipe.replaceTags(tags);
         }
@@ -130,6 +146,7 @@ public class RecipeService {
 
     private void updateIngredients(Recipe recipe, List<RecipeIngredientAddRequest> requests) {
         if (requests != null) {
+            log.debug("Updating ingredients for recipe with [{}] ingredient requests", requests.size());
             List<RecipeIngredient> ingredients = recipeIngredientService.assembleIngredients(requests);
             recipe.replaceIngredients(ingredients);
         }
@@ -137,6 +154,7 @@ public class RecipeService {
 
     private void updateSteps(Recipe recipe, List<StepAppendRequest> requests) {
         if (requests != null) {
+            log.debug("Updating steps for recipe with [{}] step requests", requests.size());
             List<Step> newSteps = requests.stream()
                     .map(req -> {
                         Step step = stepMapper.toEntity(req);

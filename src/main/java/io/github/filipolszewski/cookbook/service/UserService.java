@@ -12,10 +12,12 @@ import io.github.filipolszewski.cookbook.repository.UserRepository;
 import io.github.filipolszewski.cookbook.security.UserContext;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -30,9 +32,10 @@ public class UserService {
     private final FavouriteRepository favouriteRepository;
 
     public UserPublicProfileResponse getPublicUserProfile(String username) {
+        log.debug("Fetching public profile for username: {}", username);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
-                    new ResourceNotFoundException("Could not find a user with username: " + username));
+                        new ResourceNotFoundException("Could not find a user with username: " + username));
 
         long recipeCount = recipeRepository.countByAuthorUsername(username);
 
@@ -41,6 +44,7 @@ public class UserService {
 
     public UserPrivateProfileResponse getMyProfile() {
         Long id = userContext.getCurrentUserId();
+        log.debug("Fetching private profile for current user ID: {}", id);
         User currentUser = findUserById(id);
 
         long recipeCount = recipeRepository.countByAuthorId(id);
