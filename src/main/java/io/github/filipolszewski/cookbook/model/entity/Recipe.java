@@ -49,7 +49,7 @@ public class Recipe extends BaseEntity {
     @Column(nullable = false)
     private LocalDate publicationDate;
 
-    private String imgUrl;
+    private String imageKey;
 
     /**
      * Cached average rating for performance optimization.

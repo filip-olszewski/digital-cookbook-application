@@ -1,6 +1,8 @@
 package io.github.filipolszewski.cookbook.security.service;
 
 import io.github.filipolszewski.cookbook.config.properties.JwtProperties;
+import io.github.filipolszewski.cookbook.model.entity.User;
+import io.github.filipolszewski.cookbook.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -23,24 +25,32 @@ public class TokenService {
 
     public String generateToken(Authentication authentication) {
         log.debug("Generating JWT access token for principal: {}", authentication.getName());
-
         String scope = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(" "));
 
-        Instant now = Instant.now();
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
+        return buildToken(authentication.getName(), scope, principal.getId());
+    }
+
+    public String generateToken(User user) {
+        return buildToken(user.getEmail(), user.getRole().name(), user.getId());
+    }
+
+    private String buildToken(String subject, String scope, Long userId) {
+        Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(jwtProperties.expirationSeconds()))
-                .subject(authentication.getName())
+                .subject(subject)
                 .claim("scope", scope)
+                .claim("userId", userId)
                 .build();
 
         String token = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-        log.debug("Successfully generated JWT access token for principal: {}", authentication.getName());
-
+        log.debug("Successfully generated JWT access token for principal: {}", subject);
         return token;
     }
 

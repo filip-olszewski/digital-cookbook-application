@@ -35,7 +35,7 @@ public class Category extends BaseEntity {
     @DatabaseUnique
     private String slug;
 
-    private String imgUrl;
+    private String imageKey;
 
     // RELATIONS
     @ManyToOne(fetch = FetchType.LAZY)

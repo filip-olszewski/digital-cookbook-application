@@ -427,7 +427,7 @@ class CategoryServiceTest {
         savedCategory.setId(categoryId);
         savedCategory.setName(newName);
         savedCategory.setSlug("meal");
-        savedCategory.setImgUrl(newImgUrl);
+        savedCategory.setImageKey(newImgUrl);
         savedCategory.setParentCategory(newParent);
 
         var expected = new CategoryDetailsResponse(
@@ -446,7 +446,7 @@ class CategoryServiceTest {
         assertEquals(newName, savedCategory.getName());
         assertEquals("meal", savedCategory.getSlug());
         assertEquals(newParent.getId(), savedCategory.getParentCategory().getId());
-        assertEquals(newImgUrl, savedCategory.getImgUrl());
+        assertEquals(newImgUrl, savedCategory.getImageKey());
 
         verify(categoryRepository).save(eq(foundCategory));
     }

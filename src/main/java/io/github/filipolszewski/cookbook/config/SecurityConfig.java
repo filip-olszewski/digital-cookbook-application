@@ -7,11 +7,13 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import io.github.filipolszewski.cookbook.config.properties.CorsProperties;
+import io.github.filipolszewski.cookbook.config.properties.JwtProperties;
 import io.github.filipolszewski.cookbook.config.properties.RsaKeyProperties;
 import io.github.filipolszewski.cookbook.constant.ApiConstants;
 import io.github.filipolszewski.cookbook.security.CustomAccessDeniedHandler;
 import io.github.filipolszewski.cookbook.security.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -41,6 +43,11 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@EnableConfigurationProperties({
+    RsaKeyProperties.class,
+    JwtProperties.class,
+    CorsProperties.class
+})
 public class SecurityConfig {
 
     private final RsaKeyProperties rsaKeyProperties;
@@ -59,6 +66,10 @@ public class SecurityConfig {
 
                 // For demonstration
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+                // S3 file upload
+                .requestMatchers(ApiConstants.API_V1 + "/files/upload-url").authenticated()
+                .requestMatchers(ApiConstants.API_V1 + "/files/download-url").permitAll()
 
                 .requestMatchers(HttpMethod.GET,
                         ApiConstants.API_V1 + "/categories/**",

@@ -20,7 +20,7 @@ public record RecipeDetailsResponse(
     Integer prepTime,
     Integer servings,
     LocalDate publicationDate,
-    String imgUrl,
+    String imageKey,
     Double rating,
     Integer reviewCount,
     Integer favouriteCount,

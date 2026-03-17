@@ -4,6 +4,6 @@ import org.openapitools.jackson.nullable.JsonNullable;
 
 public record CategoryUpdateRequest(
     String name,
-    JsonNullable<String> imgUrl,
+    JsonNullable<String> imageKey,
     JsonNullable<Long> parentId
 ) {}

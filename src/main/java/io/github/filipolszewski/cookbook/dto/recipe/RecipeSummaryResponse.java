@@ -10,7 +10,7 @@ public record RecipeSummaryResponse(
     String name,
     String slug,
     Integer prepTime,
-    String imgUrl,
+    String imageKey,
     Double rating,
     Integer reviewCount,
     Integer favouriteCount,

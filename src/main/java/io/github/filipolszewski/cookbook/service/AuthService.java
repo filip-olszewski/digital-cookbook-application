@@ -13,6 +13,7 @@ import io.github.filipolszewski.cookbook.model.entity.RefreshToken;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
+import io.github.filipolszewski.cookbook.security.CustomUserPrincipal;
 import io.github.filipolszewski.cookbook.security.service.RefreshTokenService;
 import io.github.filipolszewski.cookbook.security.service.TokenService;
 import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
@@ -53,9 +54,10 @@ public class AuthService {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
+        CustomUserPrincipal principal = (CustomUserPrincipal) auth.getPrincipal();
 
         String accessToken = tokenService.generateToken(auth);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(auth.getName());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(principal.getId());
 
         log.info("User {} successfully logged in", request.email());
 
@@ -102,12 +104,7 @@ public class AuthService {
         RefreshToken token = refreshTokenService.findByToken(request.token());
         refreshTokenService.verifyExpiration(token);
         User user = token.getUser();
-
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                user.getEmail(), null, List.of(new SimpleGrantedAuthority(user.getRole().name()))
-        );
-
-        String accessToken = tokenService.generateToken(auth);
+        String accessToken = tokenService.generateToken(user);
 
         log.info("Successfully refreshed token for user ID: {}", user.getId());
 

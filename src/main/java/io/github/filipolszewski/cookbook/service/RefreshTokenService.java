@@ -28,22 +28,18 @@ public class RefreshTokenService {
     private final JwtProperties jwtProperties;
 
     @Transactional
-    public RefreshToken createRefreshToken(String email) {
-        log.debug("Generating new refresh token for user email: {}", email);
+    public RefreshToken createRefreshToken(Long userId) {
+        log.debug("Generating new refresh token for user email: {}", userId);
 
-        User user = userRepository.findByEmail(email).orElseThrow(() ->
-                new ResourceNotFoundException(ErrorMessageUtil.notFound(User.class, "email", email))
-        );
-
-        refreshTokenRepository.deleteByUserId(user.getId());
+        refreshTokenRepository.deleteByUserId(userId);
 
         RefreshToken token = new RefreshToken();
-        token.setUser(user);
+        token.setUser(userRepository.getReferenceById(userId));
         token.setToken(UUID.randomUUID().toString());
         token.setExpiryDate(Instant.now().plusSeconds(jwtProperties.refreshExpirationSeconds()));
 
         RefreshToken saved = refreshTokenRepository.save(token);
-        log.debug("Successfully generated and saved refresh token for user ID: {}", user.getId());
+        log.debug("Successfully generated and saved refresh token for user ID: {}", userId);
 
         return saved;
     }

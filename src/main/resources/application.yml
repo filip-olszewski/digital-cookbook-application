@@ -51,6 +51,14 @@ app:
       - OPTIONS
     allowed-headers:
       - "*"
+  storage:
+    cloudflare:
+      r2:
+        access-key-id: ${R2_ACCESS_KEY_ID}
+        secret-access-key: ${R2_SECRET_ACCESS_KEY}
+        region: auto
+        account-id: fd24ea02c7bf70875ea5945824fcd6cd
+        bucket: digital-cookbook-bucket
 
 management:
   endpoints:

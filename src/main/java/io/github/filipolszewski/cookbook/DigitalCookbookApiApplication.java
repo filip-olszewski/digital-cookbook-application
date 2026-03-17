@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @SpringBootApplication
-@EnableConfigurationProperties({RsaKeyProperties.class, JwtProperties.class, CorsProperties.class})
 public class DigitalCookbookApiApplication {
 
 	public static void main(String[] args) {

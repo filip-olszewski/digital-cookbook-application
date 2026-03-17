@@ -15,7 +15,7 @@ public record RecipeUpdateRequest(
     String description,
     Integer prepTime,
     Integer servings,
-    JsonNullable<String> imgUrl,
+    JsonNullable<String> imageKey,
     Long categoryId,
     List<Long> tagIds,
     List<@Valid RecipeIngredientAddRequest> recipeIngredients,

@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j // Added Lombok logger
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -95,8 +97,28 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ProblemDetail handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        log.warn("HTTP method not supported: {}", ex.getMessage());
+        return ProblemDetailBuilder.builder()
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .title("Method Not Allowed")
+                .message(ex.getMessage())
+                .build();
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleAllOtherExceptions(Exception ex) {
+
+        if (ex instanceof ErrorResponse errorResponse) {
+            log.warn("Spring MVC Exception: {}", ex.getMessage());
+            return ProblemDetailBuilder.builder()
+                    .status(HttpStatus.valueOf(errorResponse.getStatusCode().value()))
+                    .title(errorResponse.getBody().getTitle() != null ? errorResponse.getBody().getTitle() : "Bad Request")
+                    .message(ex.getMessage())
+                    .build();
+        }
+
         log.error("An unexpected error occurred in the application", ex);
         return ProblemDetailBuilder.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
