@@ -37,6 +37,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.security.KeyFactory;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 
 @Configuration
@@ -79,8 +85,8 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // Actuator
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/actuator/metrics").hasAuthority("ADMIN")
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/**").hasAuthority("ADMIN")
 
                 // Only authenticated user can see their own profile
                 .requestMatchers(ApiConstants.API_V1 + "/users/me").authenticated()
@@ -122,9 +128,14 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                .jwt(jwt -> {
+                            try {
+                                jwt.decoder(jwtDecoder())
+                                    .jwtAuthenticationConverter(jwtAuthenticationConverter());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                 )
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler)
@@ -171,17 +182,31 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(rsaKeyProperties.publicKey()).build();
+    public JwtDecoder jwtDecoder() throws Exception {
+        return NimbusJwtDecoder.withPublicKey(getPublicKey()).build();
     }
 
     @Bean
-    public JwtEncoder jwtEncoder() {
-        JWK jwk = new RSAKey.Builder(rsaKeyProperties.publicKey())
-                .privateKey(rsaKeyProperties.privateKey())
+    public JwtEncoder jwtEncoder() throws Exception {
+        JWK jwk = new RSAKey.Builder(getPublicKey())
+                .privateKey(getPrivateKey())
                 .build();
         JWKSource<SecurityContext> jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
         return new NimbusJwtEncoder(jwks);
+    }
+
+    private RSAPublicKey getPublicKey() throws Exception {
+        byte[] keyBytes = Base64.getDecoder().decode(rsaKeyProperties.publicKey());
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return (RSAPublicKey) keyFactory.generatePublic(spec);
+    }
+
+    private RSAPrivateKey getPrivateKey() throws Exception {
+        byte[] keyBytes = Base64.getDecoder().decode(rsaKeyProperties.privateKey());
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return (RSAPrivateKey) keyFactory.generatePrivate(spec);
     }
 
 }

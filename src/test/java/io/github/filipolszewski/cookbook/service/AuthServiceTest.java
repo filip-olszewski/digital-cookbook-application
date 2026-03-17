@@ -13,8 +13,7 @@ import io.github.filipolszewski.cookbook.model.entity.RefreshToken;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.model.enumeration.Role;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
-import io.github.filipolszewski.cookbook.security.service.RefreshTokenService;
-import io.github.filipolszewski.cookbook.security.service.TokenService;
+import io.github.filipolszewski.cookbook.security.CustomUserPrincipal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -64,14 +63,19 @@ class AuthServiceTest {
     void login_WhenCredentialsAreValid_ShouldReturnAuthResponse() {
         LoginRequest request = new LoginRequest("test@example.com", "password");
         Authentication auth = mock(Authentication.class);
+
+        CustomUserPrincipal principal = mock(CustomUserPrincipal.class);
+        when(principal.getId()).thenReturn(1L);
+        when(auth.getPrincipal()).thenReturn(principal);
+
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setToken("refresh-uuid");
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(auth);
-        when(auth.getName()).thenReturn("test@example.com");
+
         when(tokenService.generateToken(auth)).thenReturn("jwt-access-token");
-        when(refreshTokenService.createRefreshToken("test@example.com")).thenReturn(refreshToken);
+        when(refreshTokenService.createRefreshToken(1L)).thenReturn(refreshToken);
         when(jwtProperties.expirationSeconds()).thenReturn(3600L);
 
         AuthResponse response = authService.login(request);
@@ -91,7 +95,8 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadCredentialsException.class);
 
-        verify(tokenService, never()).generateToken(any());
+        verify(tokenService, never()).generateToken(any(Authentication.class));
+        verify(tokenService, never()).generateToken(any(User.class));
     }
 
     @Test
@@ -163,6 +168,7 @@ class AuthServiceTest {
         TokenRefreshRequest request = new TokenRefreshRequest(requestToken);
 
         User user = new User();
+        user.setId(5L);
         user.setEmail("user@example.com");
         user.setRole(Role.USER);
 
@@ -172,7 +178,7 @@ class AuthServiceTest {
 
         when(refreshTokenService.findByToken(requestToken)).thenReturn(refreshToken);
         doNothing().when(refreshTokenService).verifyExpiration(refreshToken);
-        when(tokenService.generateToken(any(Authentication.class))).thenReturn("new-access-token");
+        when(tokenService.generateToken(user)).thenReturn("new-access-token");
         when(jwtProperties.expirationSeconds()).thenReturn(3600L);
 
         AuthResponse response = authService.refreshToken(request);

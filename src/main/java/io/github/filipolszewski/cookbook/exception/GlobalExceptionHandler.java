@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -103,6 +104,26 @@ public class GlobalExceptionHandler {
         return ProblemDetailBuilder.builder()
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .title("Method Not Allowed")
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentialsException(BadCredentialsException ex) {
+        log.warn("Bad credentials!: {}", ex.getMessage());
+        return ProblemDetailBuilder.builder()
+                .status(HttpStatus.UNAUTHORIZED)
+                .title("Invalid email or password")
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    public ProblemDetail handleInternalAuthenticationServiceException(InternalAuthenticationServiceException ex) {
+        log.warn("Bad credentials!: {}", ex.getMessage());
+        return ProblemDetailBuilder.builder()
+                .status(HttpStatus.UNAUTHORIZED)
+                .title("Invalid email or password")
                 .message(ex.getMessage())
                 .build();
     }

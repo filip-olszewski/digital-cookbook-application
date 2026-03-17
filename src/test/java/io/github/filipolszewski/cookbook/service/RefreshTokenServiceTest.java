@@ -1,4 +1,4 @@
-package io.github.filipolszewski.cookbook.security.service;
+package io.github.filipolszewski.cookbook.service;
 
 import io.github.filipolszewski.cookbook.config.properties.JwtProperties;
 import io.github.filipolszewski.cookbook.exception.AccessDeniedException;
@@ -7,6 +7,7 @@ import io.github.filipolszewski.cookbook.model.entity.RefreshToken;
 import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.repository.RefreshTokenRepository;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,19 +34,19 @@ class RefreshTokenServiceTest {
 
     @Test
     void createRefreshToken_WhenUserExists_ShouldDeleteOldAndSaveNew() {
-        String email = "test@example.com";
+        Long id = 1L;
         User user = new User();
-        user.setId(100L);
+        user.setId(id);
 
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(userRepository.getReferenceById(id)).thenReturn(user);
         when(jwtProperties.refreshExpirationSeconds()).thenReturn(86400L);
         when(refreshTokenRepository.save(any(RefreshToken.class)))
                 .thenAnswer(i -> i.getArguments()[0]);
 
-        RefreshToken result = refreshTokenService.createRefreshToken(email);
+        RefreshToken result = refreshTokenService.createRefreshToken(id);
 
 
-        verify(refreshTokenRepository).deleteByUserId(100L);
+        verify(refreshTokenRepository).deleteByUserId(id);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
         assertThat(result).isNotNull();
         assertThat(result.getUser()).isEqualTo(user);
@@ -55,10 +56,11 @@ class RefreshTokenServiceTest {
 
     @Test
     void createRefreshToken_WhenUserNotFound_ShouldThrowException() {
-        when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
+        when(userRepository.getReferenceById(1L))
+                .thenThrow(new EntityNotFoundException("User not found"));
 
-        assertThatThrownBy(() -> refreshTokenService.createRefreshToken("ghost@example.com"))
-                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> refreshTokenService.createRefreshToken(1L))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package io.github.filipolszewski.cookbook.security.service;
+package io.github.filipolszewski.cookbook.service;
 
 import io.github.filipolszewski.cookbook.config.properties.JwtProperties;
 import io.github.filipolszewski.cookbook.model.entity.User;

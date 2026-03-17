@@ -1,4 +1,4 @@
-package io.github.filipolszewski.cookbook.service.impl;
+package io.github.filipolszewski.cookbook.service.storage;
 
 import io.github.filipolszewski.cookbook.config.properties.R2Properties;
 import io.github.filipolszewski.cookbook.service.StorageService;

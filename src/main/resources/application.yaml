@@ -18,13 +18,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         naming:
           physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-    show-sql: true
+    show-sql: false
     defer-datasource-initialization: false
-
-  sql:
-    init:
-      mode: always
-
   data:
     web:
       pageable:
@@ -32,17 +27,17 @@ spring:
         max-page-size: 48
 
 rsa:
-  public-key: classpath:certs/public.pem
-  private-key: classpath:certs/private.pem
+  public-key: ${RSA_PUBLIC_KEY}
+  private-key: ${RSA_PRIVATE_KEY}
 
 jwt:
-  expiration-seconds: 3600
+  expiration-seconds: 1800
   refresh-expiration-seconds: 604800 # One week
 
 app:
   cors:
     allowed-origins:
-      - "http://localhost:5173"
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
     allowed-methods:
       - GET
       - POST
@@ -56,9 +51,9 @@ app:
       r2:
         access-key-id: ${R2_ACCESS_KEY_ID}
         secret-access-key: ${R2_SECRET_ACCESS_KEY}
+        account-id: ${R2_ACCOUNT_ID}
+        bucket: ${R2_BUCKET_NAME}
         region: auto
-        account-id: fd24ea02c7bf70875ea5945824fcd6cd
-        bucket: digital-cookbook-bucket
 
 management:
   endpoints:
@@ -67,11 +62,11 @@ management:
         include: health, info, metrics
   endpoint:
     health:
-      show-details: always
+      show-details: when_authorized
 
 logging:
   level:
     root: info
-    io.github.filipolszewski.cookbook: debug
+    io.github.filipolszewski.cookbook: info
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

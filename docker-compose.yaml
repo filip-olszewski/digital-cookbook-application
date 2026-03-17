@@ -2,22 +2,30 @@ services:
   digital-cookbook:
     container_name: cookbook
     build: .
+    env_file:
+      - .env
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/cookbookdb
-      DB_PASSWORD: password
-      DB_USER: user
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USER: ${POSTGRES_USER}
+      RSA_PUBLIC_KEY: ${RSA_PUBLIC_KEY}
+      RSA_PRIVATE_KEY: ${RSA_PRIVATE_KEY}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
     ports:
       - "8080:8080"
     
   postgres:
     container_name: cookbook-postgres
     image: postgres:16-alpine
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: cookbookdb
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-cookbookdb}
     ports:
       - "5433:5432"
     volumes:

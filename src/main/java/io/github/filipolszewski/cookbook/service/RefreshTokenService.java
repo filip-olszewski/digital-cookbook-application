@@ -1,14 +1,10 @@
-package io.github.filipolszewski.cookbook.security.service;
+package io.github.filipolszewski.cookbook.service;
 
 import io.github.filipolszewski.cookbook.config.properties.JwtProperties;
 import io.github.filipolszewski.cookbook.exception.AccessDeniedException;
-import io.github.filipolszewski.cookbook.exception.ResourceNotFoundException;
 import io.github.filipolszewski.cookbook.model.entity.RefreshToken;
-import io.github.filipolszewski.cookbook.model.entity.User;
 import io.github.filipolszewski.cookbook.repository.RefreshTokenRepository;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
-import io.github.filipolszewski.cookbook.security.UserContext;
-import io.github.filipolszewski.cookbook.util.ErrorMessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
