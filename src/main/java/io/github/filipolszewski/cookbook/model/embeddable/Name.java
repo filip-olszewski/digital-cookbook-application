@@ -10,6 +10,11 @@ public record Name(
     String middleName,
     @NotBlank @Column(nullable = false) String lastName
 ) {
+
+    public Name(String firstName, String lastName) {
+        this(firstName, null, lastName);
+    }
+
     public String getFullName() {
         StringBuilder builder = new StringBuilder(firstName);
         if(middleName != null && !middleName.isBlank()) {

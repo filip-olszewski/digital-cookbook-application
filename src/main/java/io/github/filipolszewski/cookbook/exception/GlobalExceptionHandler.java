@@ -108,23 +108,14 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ProblemDetail handleBadCredentialsException(BadCredentialsException ex) {
-        log.warn("Bad credentials!: {}", ex.getMessage());
-        return ProblemDetailBuilder.builder()
-                .status(HttpStatus.UNAUTHORIZED)
-                .title("Invalid email or password")
-                .message(ex.getMessage())
-                .build();
-    }
 
     @ExceptionHandler(InternalAuthenticationServiceException.class)
     public ProblemDetail handleInternalAuthenticationServiceException(InternalAuthenticationServiceException ex) {
-        log.warn("Bad credentials!: {}", ex.getMessage());
+        log.warn("Failed authentication attempt: Bad credentials provided.");
         return ProblemDetailBuilder.builder()
                 .status(HttpStatus.UNAUTHORIZED)
-                .title("Invalid email or password")
-                .message(ex.getMessage())
+                .title("Authentication Failed")
+                .message("Invalid email or password")
                 .build();
     }
 
