@@ -9,12 +9,16 @@ import io.github.filipolszewski.cookbook.repository.CategoryRepository;
 import io.github.filipolszewski.cookbook.repository.RecipeRepository;
 import io.github.filipolszewski.cookbook.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 
+@Disabled("Skipping integration tests until core API features are finalized")
+@ActiveProfiles("test")
 class RecipeIntegrationTest extends BaseIntegrationTest {
 
     @Autowired

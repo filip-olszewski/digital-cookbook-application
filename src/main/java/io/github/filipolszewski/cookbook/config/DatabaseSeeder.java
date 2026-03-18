@@ -20,7 +20,7 @@ import java.util.*;
 
 @Slf4j
 @Component
-@Profile("!prod")
+@Profile({"!prod", "!test"})
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 

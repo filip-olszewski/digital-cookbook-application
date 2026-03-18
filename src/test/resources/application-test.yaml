@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cookbookdb
+    username: admin
+    password: admin
+
+rsa:
+  private-key: dummy_private_key
+  public-key: dummy_public_key
+
+storage:
+  cloudflare:
+    r2:
+      access-key-id: dummy_key
+      secret-access-key: dummy_secret
+      account-id: dummy_account
+      bucket-name: dummy_bucket
